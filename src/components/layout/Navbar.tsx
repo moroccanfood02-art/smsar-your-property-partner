@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, Globe, ChevronDown, User } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, Globe, ChevronDown, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Language } from '@/lib/i18n';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'ar', label: 'العربية', flag: '🇸🇦' },
@@ -20,8 +23,24 @@ const languages: { code: Language; label: string; flag: string }[] = [
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { language, setLanguage, t, dir } = useLanguage();
+  const { user, profile, role, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const currentLang = languages.find((l) => l.code === language);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
@@ -29,8 +48,8 @@ const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-gold rounded-lg flex items-center justify-center shadow-gold">
-              <span className="text-navy-dark font-bold text-xl font-cairo">س</span>
+            <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-yellow-400 rounded-lg flex items-center justify-center shadow-gold">
+              <span className="text-slate-900 font-bold text-xl font-cairo">س</span>
             </div>
             <span className="text-xl font-bold text-foreground font-cairo">
               SMSAR
@@ -90,12 +109,59 @@ const Navbar: React.FC = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="ghost" size="sm">
-              {t('login')}
-            </Button>
-            <Button variant="gold" size="sm">
-              {t('register')}
-            </Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={profile?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-amber-500 text-slate-900 text-xs">
+                        {profile?.full_name ? getInitials(profile.full_name) : <User className="w-4 h-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden lg:inline">{profile?.full_name || user.email?.split('@')[0]}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align={dir === 'rtl' ? 'start' : 'end'} className="w-48">
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">{profile?.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                    {role && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-amber-500/10 text-amber-600 text-xs rounded-full">
+                        {role === 'customer' ? (dir === 'rtl' ? 'زبون' : 'Customer') : 
+                         role === 'owner' ? (dir === 'rtl' ? 'مالك' : 'Owner') : 
+                         (dir === 'rtl' ? 'مدير' : 'Admin')}
+                      </span>
+                    )}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="w-4 h-4 me-2" />
+                    {dir === 'rtl' ? 'الملف الشخصي' : 'Profile'}
+                  </DropdownMenuItem>
+                  {role === 'admin' && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      {dir === 'rtl' ? 'لوحة التحكم' : 'Dashboard'}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <LogOut className="w-4 h-4 me-2" />
+                    {dir === 'rtl' ? 'تسجيل الخروج' : 'Sign Out'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+                  {t('login')}
+                </Button>
+                <Button variant="gold" size="sm" onClick={() => navigate('/auth')}>
+                  {t('register')}
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -150,7 +216,7 @@ const Navbar: React.FC = () => {
                     }}
                     className={`flex-1 py-2 rounded-lg text-center transition-colors ${
                       language === lang.code
-                        ? 'bg-gold text-navy-dark'
+                        ? 'bg-amber-500 text-slate-900'
                         : 'bg-secondary text-secondary-foreground'
                     }`}
                   >
@@ -160,12 +226,20 @@ const Navbar: React.FC = () => {
               </div>
 
               <div className="flex gap-2 pt-4">
-                <Button variant="outline" className="flex-1">
-                  {t('login')}
-                </Button>
-                <Button variant="gold" className="flex-1">
-                  {t('register')}
-                </Button>
+                {user ? (
+                  <Button variant="outline" className="flex-1" onClick={handleSignOut}>
+                    {dir === 'rtl' ? 'تسجيل الخروج' : 'Sign Out'}
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" className="flex-1" onClick={() => { navigate('/auth'); setIsMenuOpen(false); }}>
+                      {t('login')}
+                    </Button>
+                    <Button variant="gold" className="flex-1" onClick={() => { navigate('/auth'); setIsMenuOpen(false); }}>
+                      {t('register')}
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
