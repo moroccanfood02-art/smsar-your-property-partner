@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, MapPin, Globe, Camera, Save, ArrowLeft, ArrowRight, Shield } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Globe, Camera, Save, ArrowLeft, ArrowRight, Shield, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,10 +21,13 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('Morocco');
   const [userLanguage, setUserLanguage] = useState('ar');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ArrowIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
@@ -62,6 +65,11 @@ const ProfilePage: React.FC = () => {
       emailNotVerified: 'البريد غير مُفعّل',
       phoneVerified: 'الهاتف مُفعّل',
       phoneNotVerified: 'الهاتف غير مُفعّل',
+      uploadPhoto: 'رفع صورة',
+      uploadSuccess: 'تم رفع الصورة بنجاح',
+      uploadError: 'حدث خطأ أثناء رفع الصورة',
+      invalidFileType: 'نوع الملف غير مدعوم. استخدم JPG أو PNG أو GIF',
+      fileTooLarge: 'حجم الملف كبير جداً. الحد الأقصى 5MB',
     },
     en: {
       profile: 'Profile',
@@ -96,6 +104,11 @@ const ProfilePage: React.FC = () => {
       emailNotVerified: 'Email Not Verified',
       phoneVerified: 'Phone Verified',
       phoneNotVerified: 'Phone Not Verified',
+      uploadPhoto: 'Upload Photo',
+      uploadSuccess: 'Photo uploaded successfully',
+      uploadError: 'Error uploading photo',
+      invalidFileType: 'Invalid file type. Use JPG, PNG, or GIF',
+      fileTooLarge: 'File too large. Maximum size is 5MB',
     },
     fr: {
       profile: 'Profil',
@@ -130,6 +143,11 @@ const ProfilePage: React.FC = () => {
       emailNotVerified: 'Email Non Vérifié',
       phoneVerified: 'Téléphone Vérifié',
       phoneNotVerified: 'Téléphone Non Vérifié',
+      uploadPhoto: 'Télécharger Photo',
+      uploadSuccess: 'Photo téléchargée avec succès',
+      uploadError: 'Erreur lors du téléchargement',
+      invalidFileType: 'Type de fichier invalide. Utilisez JPG, PNG ou GIF',
+      fileTooLarge: 'Fichier trop volumineux. Maximum 5MB',
     },
   };
 
@@ -163,8 +181,62 @@ const ProfilePage: React.FC = () => {
       setPhone(profile.phone || '');
       setCountry(profile.country || 'Morocco');
       setUserLanguage(profile.language || 'ar');
+      setAvatarUrl(profile.avatar_url || null);
     }
   }, [profile]);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: txt.invalidFileType, variant: 'destructive' });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({ title: txt.fileTooLarge, variant: 'destructive' });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast({ title: txt.uploadSuccess });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({ title: txt.uploadError, variant: 'destructive' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,13 +324,28 @@ const ProfilePage: React.FC = () => {
                 <div className="flex items-center gap-6">
                   <div className="relative">
                     <Avatar className="w-24 h-24">
-                      <AvatarImage src={profile?.avatar_url || undefined} />
+                      <AvatarImage src={avatarUrl || undefined} />
                       <AvatarFallback className="bg-amber-500 text-slate-900 text-2xl font-bold">
                         {fullName ? getInitials(fullName) : <User className="w-10 h-10" />}
                       </AvatarFallback>
                     </Avatar>
-                    <button className="absolute bottom-0 end-0 p-2 bg-amber-500 rounded-full text-slate-900 hover:bg-amber-600 transition-colors shadow-lg">
-                      <Camera className="w-4 h-4" />
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleAvatarUpload}
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      className="hidden"
+                    />
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="absolute bottom-0 end-0 p-2 bg-amber-500 rounded-full text-slate-900 hover:bg-amber-600 transition-colors shadow-lg disabled:opacity-50"
+                    >
+                      {uploadingAvatar ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Camera className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                   <div className="flex-1">
