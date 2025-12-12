@@ -56,6 +56,84 @@ export type Database = {
         }
         Relationships: []
       }
+      properties: {
+        Row: {
+          address: string | null
+          amenities: string[] | null
+          area: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string
+          country: string
+          created_at: string
+          currency: string
+          description: string | null
+          featured: boolean | null
+          id: string
+          images: string[] | null
+          latitude: number | null
+          listing_type: Database["public"]["Enums"]["listing_type"]
+          longitude: number | null
+          owner_id: string
+          price: number
+          property_type: Database["public"]["Enums"]["property_type"]
+          status: Database["public"]["Enums"]["property_status"]
+          title: string
+          updated_at: string
+          views_count: number | null
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[] | null
+          area?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city: string
+          country?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          featured?: boolean | null
+          id?: string
+          images?: string[] | null
+          latitude?: number | null
+          listing_type?: Database["public"]["Enums"]["listing_type"]
+          longitude?: number | null
+          owner_id: string
+          price: number
+          property_type?: Database["public"]["Enums"]["property_type"]
+          status?: Database["public"]["Enums"]["property_status"]
+          title: string
+          updated_at?: string
+          views_count?: number | null
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[] | null
+          area?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string
+          country?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          featured?: boolean | null
+          id?: string
+          images?: string[] | null
+          latitude?: number | null
+          listing_type?: Database["public"]["Enums"]["listing_type"]
+          longitude?: number | null
+          owner_id?: string
+          price?: number
+          property_type?: Database["public"]["Enums"]["property_type"]
+          status?: Database["public"]["Enums"]["property_status"]
+          title?: string
+          updated_at?: string
+          views_count?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -92,6 +170,15 @@ export type Database = {
     }
     Enums: {
       app_role: "customer" | "owner" | "admin"
+      listing_type: "sale" | "daily_rent" | "monthly_rent" | "permanent_rent"
+      property_status: "available" | "sold" | "rented" | "unavailable"
+      property_type:
+        | "apartment"
+        | "villa"
+        | "house"
+        | "land"
+        | "commercial"
+        | "office"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -220,6 +307,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["customer", "owner", "admin"],
+      listing_type: ["sale", "daily_rent", "monthly_rent", "permanent_rent"],
+      property_status: ["available", "sold", "rented", "unavailable"],
+      property_type: [
+        "apartment",
+        "villa",
+        "house",
+        "land",
+        "commercial",
+        "office",
+      ],
     },
   },
 } as const
