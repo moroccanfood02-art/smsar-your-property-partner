@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Globe, ChevronDown, User, LogOut } from 'lucide-react';
+import { Menu, X, Globe, ChevronDown, User, LogOut, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -140,6 +140,12 @@ const Navbar: React.FC = () => {
                     <User className="w-4 h-4 me-2" />
                     {dir === 'rtl' ? 'الملف الشخصي' : 'Profile'}
                   </DropdownMenuItem>
+                  {(role === 'owner' || role === 'admin') && (
+                    <DropdownMenuItem onClick={() => navigate('/add-property')}>
+                      <Plus className="w-4 h-4 me-2" />
+                      {dir === 'rtl' ? 'إضافة عقار' : 'Add Property'}
+                    </DropdownMenuItem>
+                  )}
                   {role === 'admin' && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
                       {dir === 'rtl' ? 'لوحة التحكم' : 'Dashboard'}
