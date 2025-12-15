@@ -15,6 +15,7 @@ import PropertyDetailsPage from "./pages/PropertyDetailsPage";
 import AddPropertyPage from "./pages/AddPropertyPage";
 import MyPropertiesPage from "./pages/MyPropertiesPage";
 import MessagesPage from "./pages/MessagesPage";
+import FavoritesPage from "./pages/FavoritesPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/add-property" element={<AddPropertyPage />} />
               <Route path="/my-properties" element={<MyPropertiesPage />} />
               <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/favorites" element={<FavoritesPage />} />
               <Route path="/admin" element={<AdminDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   MapPin, Bed, Bath, Maximize, ArrowLeft, ArrowRight, 
-  Phone, Mail, Share2, Heart, Calendar, Eye, Home, 
+  Phone, MessageSquare, Share2, Heart, Calendar, Eye, Home, 
   Building2, Loader2, ChevronLeft, ChevronRight,
   Check, X
 } from 'lucide-react';
@@ -11,9 +11,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import PropertyReviews from '@/components/property/PropertyReviews';
+import PropertyMap from '@/components/property/PropertyMap';
+import SendMessageDialog from '@/components/property/SendMessageDialog';
+import { useFavorites } from '@/hooks/useFavorites';
 import { toast } from 'sonner';
 
 interface Property {
@@ -51,11 +56,12 @@ const PropertyDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { language, dir } = useLanguage();
+  const { user } = useAuth();
   const [property, setProperty] = useState<Property | null>(null);
   const [owner, setOwner] = useState<OwnerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites({ language });
 
   const translations = {
     ar: {
@@ -309,9 +315,10 @@ const PropertyDetailsPage: React.FC = () => {
     }
   };
 
-  const handleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    toast.success(isFavorite ? txt.removedFromFavorites : txt.addedToFavorites);
+  const handleFavorite = async () => {
+    if (property) {
+      await toggleFavorite(property.id);
+    }
   };
 
   const nextImage = () => {
@@ -446,10 +453,10 @@ const PropertyDetailsPage: React.FC = () => {
                 <Button
                   variant="secondary"
                   size="icon"
-                  className={`bg-background/80 backdrop-blur-sm hover:bg-background ${isFavorite ? 'text-red-500' : ''}`}
+                  className={`bg-background/80 backdrop-blur-sm hover:bg-background ${property && isFavorite(property.id) ? 'text-red-500' : ''}`}
                   onClick={handleFavorite}
                 >
-                  <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                  <Heart className={`w-5 h-5 ${property && isFavorite(property.id) ? 'fill-current' : ''}`} />
                 </Button>
               </div>
             </div>
@@ -618,6 +625,18 @@ const PropertyDetailsPage: React.FC = () => {
                     </CardContent>
                   </Card>
                 )}
+
+                {/* Map */}
+                <PropertyMap
+                  latitude={property.latitude}
+                  longitude={property.longitude}
+                  address={property.address}
+                  city={property.city}
+                  country={property.country}
+                />
+
+                {/* Reviews */}
+                <PropertyReviews propertyId={property.id} ownerId={property.owner_id} />
               </div>
 
               {/* Sidebar */}
@@ -655,10 +674,17 @@ const PropertyDetailsPage: React.FC = () => {
                           </a>
                         </Button>
                       )}
-                      <Button variant="outline" className="w-full">
-                        <Mail className="w-4 h-4 me-2" />
-                        {txt.message}
-                      </Button>
+                      <SendMessageDialog
+                        ownerId={property.owner_id}
+                        ownerName={owner?.full_name || ''}
+                        propertyId={property.id}
+                        propertyTitle={property.title}
+                      >
+                        <Button variant="outline" className="w-full">
+                          <MessageSquare className="w-4 h-4 me-2" />
+                          {txt.message}
+                        </Button>
+                      </SendMessageDialog>
                     </div>
                   </CardContent>
                 </Card>
