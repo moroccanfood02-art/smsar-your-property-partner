@@ -243,6 +243,59 @@ export type Database = {
         }
         Relationships: []
       }
+      property_promotions: {
+        Row: {
+          amount_paid: number
+          banner_image_url: string | null
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean | null
+          owner_id: string
+          promotion_type: string
+          property_id: string
+          start_date: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          amount_paid: number
+          banner_image_url?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          owner_id: string
+          promotion_type: string
+          property_id: string
+          start_date?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          amount_paid?: number
+          banner_image_url?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          owner_id?: string
+          promotion_type?: string
+          property_id?: string
+          start_date?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_promotions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           comment: string | null
