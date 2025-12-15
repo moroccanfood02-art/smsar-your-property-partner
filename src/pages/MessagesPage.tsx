@@ -85,19 +85,12 @@ const MessagesPage = () => {
   useEffect(() => {
     if (user) {
       fetchConversations();
-      setupRealtimeSubscription();
     }
   }, [user]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!user) return;
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const setupRealtimeSubscription = () => {
     const channel = supabase
       .channel('messages-realtime')
       .on(
@@ -109,7 +102,7 @@ const MessagesPage = () => {
         },
         (payload) => {
           const newMsg = payload.new as Message;
-          if (newMsg.sender_id === user?.id || newMsg.receiver_id === user?.id) {
+          if (newMsg.sender_id === user.id || newMsg.receiver_id === user.id) {
             setMessages((prev) => [...prev, newMsg]);
             fetchConversations();
           }
@@ -120,6 +113,14 @@ const MessagesPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [user]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const fetchConversations = async () => {
