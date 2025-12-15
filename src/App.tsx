@@ -17,6 +17,9 @@ import MyPropertiesPage from "./pages/MyPropertiesPage";
 import MessagesPage from "./pages/MessagesPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import ContactPage from "./pages/ContactPage";
+import AboutPage from "./pages/AboutPage";
+import OwnerDashboard from "./pages/OwnerDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +45,9 @@ const App = () => (
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/favorites" element={<FavoritesPage />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/dashboard" element={<OwnerDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

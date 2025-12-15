@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 interface UseFavoritesOptions {
   propertyId?: string;
-  language?: 'ar' | 'en' | 'fr';
+  language?: 'ar' | 'en' | 'fr' | 'es';
 }
 
 const messages = {
@@ -23,6 +23,11 @@ const messages = {
     added: 'Ajouté aux favoris',
     removed: 'Retiré des favoris',
     loginRequired: 'Veuillez vous connecter',
+  },
+  es: {
+    added: 'Añadido a favoritos',
+    removed: 'Eliminado de favoritos',
+    loginRequired: 'Por favor inicia sesión',
   },
 };
 

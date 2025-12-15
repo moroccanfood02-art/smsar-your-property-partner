@@ -15,7 +15,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   useEffect(() => {
     const savedLang = localStorage.getItem('smsar-language') as Language;
-    if (savedLang && ['ar', 'en', 'fr'].includes(savedLang)) {
+    if (savedLang && ['ar', 'en', 'fr', 'es'].includes(savedLang)) {
       setLanguage(savedLang);
     }
   }, []);
