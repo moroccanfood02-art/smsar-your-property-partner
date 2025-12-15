@@ -81,6 +81,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -92,6 +125,9 @@ export type Database = {
           language: string | null
           phone: string | null
           phone_verified: boolean | null
+          stripe_customer_id: string | null
+          subscription_end: string | null
+          subscription_status: string | null
           updated_at: string
           user_id: string
         }
@@ -105,6 +141,9 @@ export type Database = {
           language?: string | null
           phone?: string | null
           phone_verified?: boolean | null
+          stripe_customer_id?: string | null
+          subscription_end?: string | null
+          subscription_status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -118,6 +157,9 @@ export type Database = {
           language?: string | null
           phone?: string | null
           phone_verified?: boolean | null
+          stripe_customer_id?: string | null
+          subscription_end?: string | null
+          subscription_status?: string | null
           updated_at?: string
           user_id?: string
         }

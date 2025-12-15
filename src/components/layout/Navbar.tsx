@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Globe, ChevronDown, User, LogOut, Plus, Building2, MessageSquare, LayoutDashboard, Heart } from 'lucide-react';
+import { Menu, X, Globe, ChevronDown, User, LogOut, Plus, Building2, MessageSquare, LayoutDashboard, Heart, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import NotificationBell from '@/components/NotificationBell';
 
 const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'ar', label: 'العربية', flag: '🇸🇦' },
@@ -111,7 +112,9 @@ const Navbar: React.FC = () => {
             </DropdownMenu>
 
             {user ? (
-              <DropdownMenu>
+              <>
+                <NotificationBell />
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2">
                     <Avatar className="w-8 h-8">
@@ -178,6 +181,7 @@ const Navbar: React.FC = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </>
             ) : (
               <>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
