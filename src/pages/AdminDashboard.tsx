@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -19,15 +22,26 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   Building2,
   Users,
-  MessageSquare,
   Eye,
   Trash2,
   TrendingUp,
   DollarSign,
   CreditCard,
   CheckCircle,
+  Megaphone,
+  Plus,
+  Video,
+  Image,
+  Star,
 } from 'lucide-react';
 
 interface Stats {
@@ -39,6 +53,7 @@ interface Stats {
   totalCommission: number;
   paidCommission: number;
   unpaidCommission: number;
+  activePromotions: number;
 }
 
 interface UserData {
@@ -59,6 +74,7 @@ interface PropertyData {
   status: string;
   created_at: string;
   owner_name: string;
+  owner_id: string;
 }
 
 interface TransactionData {
@@ -70,6 +86,18 @@ interface TransactionData {
   created_at: string;
   owner_name: string;
   property_title: string | null;
+}
+
+interface PromotionData {
+  id: string;
+  property_id: string;
+  property_title: string;
+  promotion_type: string;
+  video_url: string | null;
+  start_date: string;
+  end_date: string;
+  amount_paid: number;
+  is_active: boolean;
 }
 
 const AdminDashboard = () => {
@@ -86,11 +114,21 @@ const AdminDashboard = () => {
     totalCommission: 0,
     paidCommission: 0,
     unpaidCommission: 0,
+    activePromotions: 0,
   });
   const [users, setUsers] = useState<UserData[]>([]);
   const [properties, setProperties] = useState<PropertyData[]>([]);
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
+  const [promotions, setPromotions] = useState<PromotionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showPromotionDialog, setShowPromotionDialog] = useState(false);
+  const [newPromotion, setNewPromotion] = useState({
+    property_id: '',
+    promotion_type: 'featured',
+    video_url: '',
+    duration_days: 7,
+    amount_paid: 50,
+  });
 
   const t = {
     ar: {
@@ -99,6 +137,7 @@ const AdminDashboard = () => {
       users: 'المستخدمون',
       properties: 'العقارات',
       transactions: 'المعاملات',
+      promotions: 'الإعلانات',
       totalProperties: 'إجمالي العقارات',
       totalUsers: 'إجمالي المستخدمين',
       totalMessages: 'إجمالي الرسائل',
@@ -107,6 +146,7 @@ const AdminDashboard = () => {
       totalCommission: 'إجمالي العمولات',
       paidCommission: 'العمولات المدفوعة',
       unpaidCommission: 'العمولات المستحقة',
+      activePromotions: 'الإعلانات النشطة',
       name: 'الاسم',
       phone: 'الهاتف',
       role: 'الدور',
@@ -137,6 +177,23 @@ const AdminDashboard = () => {
       permanent_rent: 'كراء دائم',
       sale: 'بيع',
       markedPaid: 'تم تحديد العمولة كمدفوعة',
+      addPromotion: 'إضافة إعلان',
+      selectProperty: 'اختر العقار',
+      promotionType: 'نوع الإعلان',
+      featured: 'مميز',
+      video_ad: 'إعلان فيديو',
+      banner: 'بانر',
+      homepage: 'الصفحة الرئيسية',
+      videoUrl: 'رابط الفيديو',
+      duration: 'المدة (أيام)',
+      amountPaid: 'المبلغ المدفوع',
+      create: 'إنشاء',
+      promotionCreated: 'تم إنشاء الإعلان بنجاح',
+      endDate: 'تاريخ الانتهاء',
+      active: 'نشط',
+      expired: 'منتهي',
+      deactivate: 'إلغاء التفعيل',
+      property: 'العقار',
     },
     fr: {
       title: 'Tableau de Bord Admin',
@@ -144,6 +201,7 @@ const AdminDashboard = () => {
       users: 'Utilisateurs',
       properties: 'Propriétés',
       transactions: 'Transactions',
+      promotions: 'Promotions',
       totalProperties: 'Total Propriétés',
       totalUsers: 'Total Utilisateurs',
       totalMessages: 'Total Messages',
@@ -152,6 +210,7 @@ const AdminDashboard = () => {
       totalCommission: 'Total Commissions',
       paidCommission: 'Commissions Payées',
       unpaidCommission: 'Commissions Dues',
+      activePromotions: 'Promotions Actives',
       name: 'Nom',
       phone: 'Téléphone',
       role: 'Rôle',
@@ -182,6 +241,23 @@ const AdminDashboard = () => {
       permanent_rent: 'Location Permanente',
       sale: 'Vente',
       markedPaid: 'Commission marquée comme payée',
+      addPromotion: 'Ajouter Promotion',
+      selectProperty: 'Sélectionner Propriété',
+      promotionType: 'Type de Promotion',
+      featured: 'En Vedette',
+      video_ad: 'Pub Vidéo',
+      banner: 'Bannière',
+      homepage: 'Page Accueil',
+      videoUrl: 'URL Vidéo',
+      duration: 'Durée (jours)',
+      amountPaid: 'Montant Payé',
+      create: 'Créer',
+      promotionCreated: 'Promotion créée avec succès',
+      endDate: 'Date Fin',
+      active: 'Actif',
+      expired: 'Expiré',
+      deactivate: 'Désactiver',
+      property: 'Propriété',
     },
     en: {
       title: 'Admin Dashboard',
@@ -189,6 +265,7 @@ const AdminDashboard = () => {
       users: 'Users',
       properties: 'Properties',
       transactions: 'Transactions',
+      promotions: 'Promotions',
       totalProperties: 'Total Properties',
       totalUsers: 'Total Users',
       totalMessages: 'Total Messages',
@@ -197,6 +274,7 @@ const AdminDashboard = () => {
       totalCommission: 'Total Commission',
       paidCommission: 'Paid Commission',
       unpaidCommission: 'Unpaid Commission',
+      activePromotions: 'Active Promotions',
       name: 'Name',
       phone: 'Phone',
       role: 'Role',
@@ -227,6 +305,23 @@ const AdminDashboard = () => {
       permanent_rent: 'Permanent Rent',
       sale: 'Sale',
       markedPaid: 'Commission marked as paid',
+      addPromotion: 'Add Promotion',
+      selectProperty: 'Select Property',
+      promotionType: 'Promotion Type',
+      featured: 'Featured',
+      video_ad: 'Video Ad',
+      banner: 'Banner',
+      homepage: 'Homepage',
+      videoUrl: 'Video URL',
+      duration: 'Duration (days)',
+      amountPaid: 'Amount Paid',
+      create: 'Create',
+      promotionCreated: 'Promotion created successfully',
+      endDate: 'End Date',
+      active: 'Active',
+      expired: 'Expired',
+      deactivate: 'Deactivate',
+      property: 'Property',
     },
   };
 
@@ -253,12 +348,12 @@ const AdminDashboard = () => {
   }, [user, role]);
 
   const fetchData = async () => {
-    // Fetch stats
-    const [propertiesRes, usersRes, messagesRes, transactionsRes] = await Promise.all([
-      supabase.from('properties').select('id, views_count'),
+    const [propertiesRes, usersRes, messagesRes, transactionsRes, promotionsRes] = await Promise.all([
+      supabase.from('properties').select('id, views_count, title, city, price, currency, status, created_at, owner_id'),
       supabase.from('profiles').select('id'),
       supabase.from('messages').select('id'),
       supabase.from('transactions').select('*'),
+      supabase.from('property_promotions').select('*').order('created_at', { ascending: false }),
     ]);
 
     const totalViews = (propertiesRes.data || []).reduce(
@@ -273,6 +368,10 @@ const AdminDashboard = () => {
       .reduce((sum: number, tx: any) => sum + (tx.commission_amount || 0), 0);
     const unpaidCommission = totalCommission - paidCommission;
 
+    const activePromos = (promotionsRes.data || []).filter(
+      (p: any) => p.is_active && new Date(p.end_date) > new Date()
+    ).length;
+
     setStats({
       totalProperties: propertiesRes.data?.length || 0,
       totalUsers: usersRes.data?.length || 0,
@@ -282,6 +381,7 @@ const AdminDashboard = () => {
       totalCommission,
       paidCommission,
       unpaidCommission,
+      activePromotions: activePromos,
     });
 
     // Fetch users with roles
@@ -306,13 +406,8 @@ const AdminDashboard = () => {
     setUsers(usersWithRoles);
 
     // Fetch properties with owner names
-    const { data: propertiesData } = await supabase
-      .from('properties')
-      .select('*')
-      .order('created_at', { ascending: false });
-
     const propertiesWithOwners: PropertyData[] = [];
-    for (const property of propertiesData || []) {
+    for (const property of propertiesRes.data || []) {
       const { data: ownerProfile } = await supabase
         .from('profiles')
         .select('full_name')
@@ -328,6 +423,7 @@ const AdminDashboard = () => {
         status: property.status,
         created_at: property.created_at,
         owner_name: ownerProfile?.full_name || 'مجهول',
+        owner_id: property.owner_id,
       });
     }
     setProperties(propertiesWithOwners);
@@ -364,6 +460,24 @@ const AdminDashboard = () => {
     }
     setTransactions(enrichedTransactions);
 
+    // Fetch promotions with property titles
+    const enrichedPromotions: PromotionData[] = [];
+    for (const promo of promotionsRes.data || []) {
+      const property = propertiesWithOwners.find(p => p.id === promo.property_id);
+      enrichedPromotions.push({
+        id: promo.id,
+        property_id: promo.property_id,
+        property_title: property?.title || 'غير معروف',
+        promotion_type: promo.promotion_type,
+        video_url: promo.video_url,
+        start_date: promo.start_date,
+        end_date: promo.end_date,
+        amount_paid: promo.amount_paid,
+        is_active: promo.is_active && new Date(promo.end_date) > new Date(),
+      });
+    }
+    setPromotions(enrichedPromotions);
+
     setLoading(false);
   };
 
@@ -387,6 +501,58 @@ const AdminDashboard = () => {
 
     if (!error) {
       toast({ title: text.markedPaid });
+      fetchData();
+    }
+  };
+
+  const handleCreatePromotion = async () => {
+    const property = properties.find(p => p.id === newPromotion.property_id);
+    if (!property) return;
+
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + newPromotion.duration_days);
+
+    const { error } = await supabase.from('property_promotions').insert({
+      property_id: newPromotion.property_id,
+      owner_id: property.owner_id,
+      promotion_type: newPromotion.promotion_type,
+      video_url: newPromotion.video_url || null,
+      end_date: endDate.toISOString(),
+      amount_paid: newPromotion.amount_paid,
+      is_active: true,
+    });
+
+    if (!error) {
+      toast({ title: text.promotionCreated });
+      setShowPromotionDialog(false);
+      setNewPromotion({
+        property_id: '',
+        promotion_type: 'featured',
+        video_url: '',
+        duration_days: 7,
+        amount_paid: 50,
+      });
+
+      // Send notification to owner
+      await supabase.from('notifications').insert({
+        user_id: property.owner_id,
+        title: 'إعلان جديد لعقارك',
+        message: `تم تفعيل إعلان لعقارك "${property.title}" لمدة ${newPromotion.duration_days} أيام`,
+        type: 'promotion',
+        link: '/owner-dashboard',
+      });
+
+      fetchData();
+    }
+  };
+
+  const handleDeactivatePromotion = async (promotionId: string) => {
+    const { error } = await supabase
+      .from('property_promotions')
+      .update({ is_active: false })
+      .eq('id', promotionId);
+
+    if (!error) {
       fetchData();
     }
   };
@@ -429,6 +595,29 @@ const AdminDashboard = () => {
     return labels[type] || type;
   };
 
+  const getPromotionTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      featured: text.featured,
+      video_ad: text.video_ad,
+      banner: text.banner,
+      homepage: text.homepage,
+    };
+    return labels[type] || type;
+  };
+
+  const getPromotionIcon = (type: string) => {
+    switch (type) {
+      case 'video_ad':
+        return <Video className="h-4 w-4" />;
+      case 'banner':
+        return <Image className="h-4 w-4" />;
+      case 'homepage':
+        return <Star className="h-4 w-4" />;
+      default:
+        return <Megaphone className="h-4 w-4" />;
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -448,9 +637,10 @@ const AdminDashboard = () => {
         <h1 className="text-3xl font-bold text-foreground mb-8">{text.title}</h1>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">{text.overview}</TabsTrigger>
             <TabsTrigger value="transactions">{text.transactions}</TabsTrigger>
+            <TabsTrigger value="promotions">{text.promotions}</TabsTrigger>
             <TabsTrigger value="users">{text.users}</TabsTrigger>
             <TabsTrigger value="properties">{text.properties}</TabsTrigger>
           </TabsList>
@@ -496,6 +686,20 @@ const AdminDashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {text.activePromotions}
+                  </CardTitle>
+                  <Megaphone className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-foreground">{stats.activePromotions}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
                     {text.totalViews}
                   </CardTitle>
                   <Eye className="h-5 w-5 text-primary" />
@@ -504,10 +708,7 @@ const AdminDashboard = () => {
                   <div className="text-3xl font-bold text-foreground">{stats.totalViews}</div>
                 </CardContent>
               </Card>
-            </div>
 
-            {/* Commission Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -588,6 +789,149 @@ const AdminDashboard = () => {
                             >
                               <CheckCircle className="h-4 w-4 me-1" />
                               {text.markPaid}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="promotions">
+            <div className="flex justify-end mb-4">
+              <Dialog open={showPromotionDialog} onOpenChange={setShowPromotionDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 me-2" />
+                    {text.addPromotion}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{text.addPromotion}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <Label>{text.selectProperty}</Label>
+                      <Select
+                        value={newPromotion.property_id}
+                        onValueChange={(value) => setNewPromotion({ ...newPromotion, property_id: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={text.selectProperty} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {properties.map((property) => (
+                            <SelectItem key={property.id} value={property.id}>
+                              {property.title} - {property.city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>{text.promotionType}</Label>
+                      <Select
+                        value={newPromotion.promotion_type}
+                        onValueChange={(value) => setNewPromotion({ ...newPromotion, promotion_type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="featured">{text.featured}</SelectItem>
+                          <SelectItem value="video_ad">{text.video_ad}</SelectItem>
+                          <SelectItem value="banner">{text.banner}</SelectItem>
+                          <SelectItem value="homepage">{text.homepage}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {newPromotion.promotion_type === 'video_ad' && (
+                      <div>
+                        <Label>{text.videoUrl}</Label>
+                        <Input
+                          value={newPromotion.video_url}
+                          onChange={(e) => setNewPromotion({ ...newPromotion, video_url: e.target.value })}
+                          placeholder="https://youtube.com/..."
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <Label>{text.duration}</Label>
+                      <Input
+                        type="number"
+                        value={newPromotion.duration_days}
+                        onChange={(e) => setNewPromotion({ ...newPromotion, duration_days: parseInt(e.target.value) })}
+                        min={1}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>{text.amountPaid} ($)</Label>
+                      <Input
+                        type="number"
+                        value={newPromotion.amount_paid}
+                        onChange={(e) => setNewPromotion({ ...newPromotion, amount_paid: parseFloat(e.target.value) })}
+                        min={0}
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleCreatePromotion}
+                      disabled={!newPromotion.property_id}
+                      className="w-full"
+                    >
+                      {text.create}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{text.property}</TableHead>
+                      <TableHead>{text.promotionType}</TableHead>
+                      <TableHead>{text.amountPaid}</TableHead>
+                      <TableHead>{text.endDate}</TableHead>
+                      <TableHead>{text.status}</TableHead>
+                      <TableHead>{text.actions}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {promotions.map((promo) => (
+                      <TableRow key={promo.id}>
+                        <TableCell className="font-medium">{promo.property_title}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getPromotionIcon(promo.promotion_type)}
+                            {getPromotionTypeLabel(promo.promotion_type)}
+                          </div>
+                        </TableCell>
+                        <TableCell>{formatPrice(promo.amount_paid)}</TableCell>
+                        <TableCell>{formatDate(promo.end_date)}</TableCell>
+                        <TableCell>
+                          <Badge variant={promo.is_active ? 'default' : 'secondary'}>
+                            {promo.is_active ? text.active : text.expired}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {promo.is_active && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeactivatePromotion(promo.id)}
+                            >
+                              {text.deactivate}
                             </Button>
                           )}
                         </TableCell>
