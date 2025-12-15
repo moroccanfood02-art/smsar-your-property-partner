@@ -1,1 +1,4 @@
 project_id = "spnzbuuwaptdhxsnbhal"
+
+[functions.make-admin]
+verify_jwt = false
