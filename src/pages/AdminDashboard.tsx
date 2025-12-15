@@ -1,0 +1,461 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Building2,
+  Users,
+  MessageSquare,
+  Eye,
+  Trash2,
+  Check,
+  X,
+  TrendingUp,
+} from 'lucide-react';
+
+interface Stats {
+  totalProperties: number;
+  totalUsers: number;
+  totalMessages: number;
+  totalViews: number;
+}
+
+interface UserData {
+  id: string;
+  user_id: string;
+  full_name: string;
+  phone: string | null;
+  created_at: string;
+  role: string;
+}
+
+interface PropertyData {
+  id: string;
+  title: string;
+  city: string;
+  price: number;
+  currency: string;
+  status: string;
+  created_at: string;
+  owner_name: string;
+}
+
+const AdminDashboard = () => {
+  const { user, role, loading: authLoading } = useAuth();
+  const { language } = useLanguage();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [stats, setStats] = useState<Stats>({
+    totalProperties: 0,
+    totalUsers: 0,
+    totalMessages: 0,
+    totalViews: 0,
+  });
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [properties, setProperties] = useState<PropertyData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const t = {
+    ar: {
+      title: 'لوحة تحكم المدير',
+      overview: 'نظرة عامة',
+      users: 'المستخدمون',
+      properties: 'العقارات',
+      messages: 'الرسائل',
+      totalProperties: 'إجمالي العقارات',
+      totalUsers: 'إجمالي المستخدمين',
+      totalMessages: 'إجمالي الرسائل',
+      totalViews: 'إجمالي المشاهدات',
+      name: 'الاسم',
+      phone: 'الهاتف',
+      role: 'الدور',
+      date: 'التاريخ',
+      actions: 'الإجراءات',
+      city: 'المدينة',
+      price: 'السعر',
+      status: 'الحالة',
+      owner: 'المالك',
+      delete: 'حذف',
+      approve: 'موافقة',
+      reject: 'رفض',
+      customer: 'زبون',
+      ownerRole: 'مالك',
+      admin: 'مدير',
+      available: 'متاح',
+      sold: 'مباع',
+      rented: 'مؤجر',
+      noAccess: 'ليس لديك صلاحية الوصول',
+      deleteSuccess: 'تم الحذف بنجاح',
+      deleteError: 'حدث خطأ أثناء الحذف',
+    },
+    fr: {
+      title: 'Tableau de Bord Admin',
+      overview: 'Aperçu',
+      users: 'Utilisateurs',
+      properties: 'Propriétés',
+      messages: 'Messages',
+      totalProperties: 'Total Propriétés',
+      totalUsers: 'Total Utilisateurs',
+      totalMessages: 'Total Messages',
+      totalViews: 'Total Vues',
+      name: 'Nom',
+      phone: 'Téléphone',
+      role: 'Rôle',
+      date: 'Date',
+      actions: 'Actions',
+      city: 'Ville',
+      price: 'Prix',
+      status: 'Statut',
+      owner: 'Propriétaire',
+      delete: 'Supprimer',
+      approve: 'Approuver',
+      reject: 'Rejeter',
+      customer: 'Client',
+      ownerRole: 'Propriétaire',
+      admin: 'Admin',
+      available: 'Disponible',
+      sold: 'Vendu',
+      rented: 'Loué',
+      noAccess: "Vous n'avez pas accès",
+      deleteSuccess: 'Supprimé avec succès',
+      deleteError: 'Erreur lors de la suppression',
+    },
+    en: {
+      title: 'Admin Dashboard',
+      overview: 'Overview',
+      users: 'Users',
+      properties: 'Properties',
+      messages: 'Messages',
+      totalProperties: 'Total Properties',
+      totalUsers: 'Total Users',
+      totalMessages: 'Total Messages',
+      totalViews: 'Total Views',
+      name: 'Name',
+      phone: 'Phone',
+      role: 'Role',
+      date: 'Date',
+      actions: 'Actions',
+      city: 'City',
+      price: 'Price',
+      status: 'Status',
+      owner: 'Owner',
+      delete: 'Delete',
+      approve: 'Approve',
+      reject: 'Reject',
+      customer: 'Customer',
+      ownerRole: 'Owner',
+      admin: 'Admin',
+      available: 'Available',
+      sold: 'Sold',
+      rented: 'Rented',
+      noAccess: "You don't have access",
+      deleteSuccess: 'Deleted successfully',
+      deleteError: 'Error deleting',
+    },
+  };
+
+  const text = t[language as keyof typeof t] || t.ar;
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        navigate('/auth');
+      } else if (role !== 'admin') {
+        navigate('/');
+        toast({
+          title: text.noAccess,
+          variant: 'destructive',
+        });
+      }
+    }
+  }, [user, role, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user && role === 'admin') {
+      fetchData();
+    }
+  }, [user, role]);
+
+  const fetchData = async () => {
+    // Fetch stats
+    const [propertiesRes, usersRes, messagesRes] = await Promise.all([
+      supabase.from('properties').select('id, views_count'),
+      supabase.from('profiles').select('id'),
+      supabase.from('messages').select('id'),
+    ]);
+
+    const totalViews = (propertiesRes.data || []).reduce(
+      (sum, p) => sum + (p.views_count || 0),
+      0
+    );
+
+    setStats({
+      totalProperties: propertiesRes.data?.length || 0,
+      totalUsers: usersRes.data?.length || 0,
+      totalMessages: messagesRes.data?.length || 0,
+      totalViews,
+    });
+
+    // Fetch users with roles
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const usersWithRoles: UserData[] = [];
+    for (const profile of profilesData || []) {
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', profile.user_id)
+        .maybeSingle();
+
+      usersWithRoles.push({
+        ...profile,
+        role: roleData?.role || 'customer',
+      });
+    }
+    setUsers(usersWithRoles);
+
+    // Fetch properties with owner names
+    const { data: propertiesData } = await supabase
+      .from('properties')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const propertiesWithOwners: PropertyData[] = [];
+    for (const property of propertiesData || []) {
+      const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', property.owner_id)
+        .maybeSingle();
+
+      propertiesWithOwners.push({
+        id: property.id,
+        title: property.title,
+        city: property.city,
+        price: property.price,
+        currency: property.currency,
+        status: property.status,
+        created_at: property.created_at,
+        owner_name: ownerProfile?.full_name || 'مجهول',
+      });
+    }
+    setProperties(propertiesWithOwners);
+
+    setLoading(false);
+  };
+
+  const handleDeleteProperty = async (propertyId: string) => {
+    const { error } = await supabase.from('properties').delete().eq('id', propertyId);
+
+    if (error) {
+      toast({ title: text.deleteError, variant: 'destructive' });
+    } else {
+      toast({ title: text.deleteSuccess });
+      setProperties(properties.filter((p) => p.id !== propertyId));
+      setStats((prev) => ({ ...prev, totalProperties: prev.totalProperties - 1 }));
+    }
+  };
+
+  const formatPrice = (price: number, currency: string) => {
+    return new Intl.NumberFormat(language === 'ar' ? 'ar-MA' : 'fr-MA').format(price) + ' ' + currency;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(
+      language === 'ar' ? 'ar-MA' : 'fr-MA'
+    );
+  };
+
+  const getRoleLabel = (userRole: string) => {
+    const labels: Record<string, string> = {
+      customer: text.customer,
+      owner: text.ownerRole,
+      admin: text.admin,
+    };
+    return labels[userRole] || userRole;
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      available: text.available,
+      sold: text.sold,
+      rented: text.rented,
+    };
+    return labels[status] || status;
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (role !== 'admin') {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-background" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <Navbar />
+      <main className="container mx-auto px-4 py-8 mt-20">
+        <h1 className="text-3xl font-bold text-foreground mb-8">{text.title}</h1>
+
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="overview">{text.overview}</TabsTrigger>
+            <TabsTrigger value="users">{text.users}</TabsTrigger>
+            <TabsTrigger value="properties">{text.properties}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {text.totalProperties}
+                  </CardTitle>
+                  <Building2 className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-foreground">{stats.totalProperties}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {text.totalUsers}
+                  </CardTitle>
+                  <Users className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-foreground">{stats.totalUsers}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {text.totalMessages}
+                  </CardTitle>
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-foreground">{stats.totalMessages}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {text.totalViews}
+                  </CardTitle>
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-foreground">{stats.totalViews}</div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{text.name}</TableHead>
+                      <TableHead>{text.phone}</TableHead>
+                      <TableHead>{text.role}</TableHead>
+                      <TableHead>{text.date}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((userData) => (
+                      <TableRow key={userData.id}>
+                        <TableCell className="font-medium">{userData.full_name}</TableCell>
+                        <TableCell>{userData.phone || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{getRoleLabel(userData.role)}</Badge>
+                        </TableCell>
+                        <TableCell>{formatDate(userData.created_at)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="properties">
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{text.name}</TableHead>
+                      <TableHead>{text.city}</TableHead>
+                      <TableHead>{text.price}</TableHead>
+                      <TableHead>{text.status}</TableHead>
+                      <TableHead>{text.owner}</TableHead>
+                      <TableHead>{text.date}</TableHead>
+                      <TableHead>{text.actions}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {properties.map((property) => (
+                      <TableRow key={property.id}>
+                        <TableCell className="font-medium">{property.title}</TableCell>
+                        <TableCell>{property.city}</TableCell>
+                        <TableCell>{formatPrice(property.price, property.currency)}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{getStatusLabel(property.status)}</Badge>
+                        </TableCell>
+                        <TableCell>{property.owner_name}</TableCell>
+                        <TableCell>{formatDate(property.created_at)}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteProperty(property.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default AdminDashboard;

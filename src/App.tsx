@@ -13,6 +13,9 @@ import ProfilePage from "./pages/ProfilePage";
 import PropertiesPage from "./pages/PropertiesPage";
 import PropertyDetailsPage from "./pages/PropertyDetailsPage";
 import AddPropertyPage from "./pages/AddPropertyPage";
+import MyPropertiesPage from "./pages/MyPropertiesPage";
+import MessagesPage from "./pages/MessagesPage";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +37,9 @@ const App = () => (
               <Route path="/properties" element={<PropertiesPage />} />
               <Route path="/property/:id" element={<PropertyDetailsPage />} />
               <Route path="/add-property" element={<AddPropertyPage />} />
+              <Route path="/my-properties" element={<MyPropertiesPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
