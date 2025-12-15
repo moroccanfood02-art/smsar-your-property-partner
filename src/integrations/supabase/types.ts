@@ -281,6 +281,53 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          commission_amount: number
+          commission_paid: boolean | null
+          created_at: string
+          id: string
+          owner_id: string
+          paid_at: string | null
+          property_area: number | null
+          property_id: string | null
+          transaction_amount: number
+          transaction_type: string
+        }
+        Insert: {
+          commission_amount: number
+          commission_paid?: boolean | null
+          created_at?: string
+          id?: string
+          owner_id: string
+          paid_at?: string | null
+          property_area?: number | null
+          property_id?: string | null
+          transaction_amount: number
+          transaction_type: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_paid?: boolean | null
+          created_at?: string
+          id?: string
+          owner_id?: string
+          paid_at?: string | null
+          property_area?: number | null
+          property_id?: string | null
+          transaction_amount?: number
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

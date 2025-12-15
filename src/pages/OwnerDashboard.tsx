@@ -18,7 +18,9 @@ import {
   Trash2,
   TrendingUp,
   Home,
-  Users,
+  DollarSign,
+  Calendar,
+  CreditCard,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -43,6 +45,7 @@ interface Property {
   views_count: number;
   images: string[];
   created_at: string;
+  area: number;
 }
 
 interface Message {
@@ -55,6 +58,16 @@ interface Message {
   property_title?: string;
 }
 
+interface Transaction {
+  id: string;
+  transaction_type: string;
+  transaction_amount: number;
+  commission_amount: number;
+  commission_paid: boolean;
+  created_at: string;
+  property_title?: string;
+}
+
 const OwnerDashboard = () => {
   const { user, loading: authLoading, role } = useAuth();
   const { language } = useLanguage();
@@ -62,10 +75,15 @@ const OwnerDashboard = () => {
   const { toast } = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [stats, setStats] = useState({
     totalViews: 0,
     totalMessages: 0,
     activeListings: 0,
+    totalTransactions: 0,
+    totalCommissionDue: 0,
+    totalEarningsToday: 0,
+    totalEarningsMonth: 0,
   });
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -98,6 +116,23 @@ const OwnerDashboard = () => {
       notAvailable: 'غير متاح',
       propertyDeleted: 'تم حذف العقار بنجاح',
       noAccess: 'لا يمكنك الوصول لهذه الصفحة',
+      analytics: 'التحليلات',
+      totalTransactions: 'إجمالي المعاملات',
+      commissionDue: 'العمولة المستحقة',
+      earningsToday: 'أرباح اليوم',
+      earningsMonth: 'أرباح الشهر',
+      transactionsTab: 'المعاملات',
+      transactionType: 'نوع المعاملة',
+      amount: 'المبلغ',
+      commission: 'العمولة',
+      paid: 'مدفوع',
+      unpaid: 'غير مدفوع',
+      date: 'التاريخ',
+      daily_rent: 'كراء يومي',
+      monthly_rent: 'كراء شهري',
+      permanent_rent: 'كراء دائم',
+      sale: 'بيع',
+      noTransactions: 'لا توجد معاملات',
     },
     en: {
       title: 'Owner Dashboard',
@@ -126,6 +161,23 @@ const OwnerDashboard = () => {
       notAvailable: 'Not Available',
       propertyDeleted: 'Property deleted successfully',
       noAccess: 'You cannot access this page',
+      analytics: 'Analytics',
+      totalTransactions: 'Total Transactions',
+      commissionDue: 'Commission Due',
+      earningsToday: "Today's Earnings",
+      earningsMonth: "Month's Earnings",
+      transactionsTab: 'Transactions',
+      transactionType: 'Transaction Type',
+      amount: 'Amount',
+      commission: 'Commission',
+      paid: 'Paid',
+      unpaid: 'Unpaid',
+      date: 'Date',
+      daily_rent: 'Daily Rent',
+      monthly_rent: 'Monthly Rent',
+      permanent_rent: 'Permanent Rent',
+      sale: 'Sale',
+      noTransactions: 'No transactions',
     },
     fr: {
       title: 'Tableau de Bord Propriétaire',
@@ -154,6 +206,23 @@ const OwnerDashboard = () => {
       notAvailable: 'Non Disponible',
       propertyDeleted: 'Propriété supprimée avec succès',
       noAccess: 'Vous ne pouvez pas accéder à cette page',
+      analytics: 'Analyses',
+      totalTransactions: 'Transactions Totales',
+      commissionDue: 'Commission Due',
+      earningsToday: "Gains Aujourd'hui",
+      earningsMonth: 'Gains du Mois',
+      transactionsTab: 'Transactions',
+      transactionType: 'Type de Transaction',
+      amount: 'Montant',
+      commission: 'Commission',
+      paid: 'Payé',
+      unpaid: 'Non Payé',
+      date: 'Date',
+      daily_rent: 'Location Journalière',
+      monthly_rent: 'Location Mensuelle',
+      permanent_rent: 'Location Permanente',
+      sale: 'Vente',
+      noTransactions: 'Aucune transaction',
     },
     es: {
       title: 'Panel del Propietario',
@@ -182,6 +251,23 @@ const OwnerDashboard = () => {
       notAvailable: 'No Disponible',
       propertyDeleted: 'Propiedad eliminada con éxito',
       noAccess: 'No puedes acceder a esta página',
+      analytics: 'Análisis',
+      totalTransactions: 'Transacciones Totales',
+      commissionDue: 'Comisión Pendiente',
+      earningsToday: 'Ganancias de Hoy',
+      earningsMonth: 'Ganancias del Mes',
+      transactionsTab: 'Transacciones',
+      transactionType: 'Tipo de Transacción',
+      amount: 'Monto',
+      commission: 'Comisión',
+      paid: 'Pagado',
+      unpaid: 'No Pagado',
+      date: 'Fecha',
+      daily_rent: 'Alquiler Diario',
+      monthly_rent: 'Alquiler Mensual',
+      permanent_rent: 'Alquiler Permanente',
+      sale: 'Venta',
+      noTransactions: 'Sin transacciones',
     },
   };
 
@@ -257,6 +343,55 @@ const OwnerDashboard = () => {
       setStats((prev) => ({ ...prev, totalMessages: messagesData.length }));
     }
 
+    // Fetch transactions
+    const { data: transactionsData } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('owner_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (transactionsData) {
+      const enrichedTransactions = await Promise.all(
+        transactionsData.map(async (tx: any) => {
+          let propertyTitle = null;
+          if (tx.property_id) {
+            const { data: property } = await supabase
+              .from('properties')
+              .select('title')
+              .eq('id', tx.property_id)
+              .maybeSingle();
+            propertyTitle = property?.title;
+          }
+          return { ...tx, property_title: propertyTitle };
+        })
+      );
+      setTransactions(enrichedTransactions);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const unpaidCommission = transactionsData
+        .filter((tx: any) => !tx.commission_paid)
+        .reduce((sum: number, tx: any) => sum + (tx.commission_amount || 0), 0);
+
+      const earningsToday = transactionsData
+        .filter((tx: any) => new Date(tx.created_at) >= today)
+        .reduce((sum: number, tx: any) => sum + (tx.transaction_amount || 0), 0);
+
+      const earningsMonth = transactionsData
+        .filter((tx: any) => new Date(tx.created_at) >= startOfMonth)
+        .reduce((sum: number, tx: any) => sum + (tx.transaction_amount || 0), 0);
+
+      setStats((prev) => ({
+        ...prev,
+        totalTransactions: transactionsData.length,
+        totalCommissionDue: unpaidCommission,
+        totalEarningsToday: earningsToday,
+        totalEarningsMonth: earningsMonth,
+      }));
+    }
+
     setLoading(false);
   };
 
@@ -292,7 +427,17 @@ const OwnerDashboard = () => {
     return colors[status] || 'bg-gray-500';
   };
 
-  const formatPrice = (price: number, currency: string) => {
+  const getTransactionTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      daily_rent: text.daily_rent,
+      monthly_rent: text.monthly_rent,
+      permanent_rent: text.permanent_rent,
+      sale: text.sale,
+    };
+    return labels[type] || type;
+  };
+
+  const formatPrice = (price: number, currency: string = 'USD') => {
     return new Intl.NumberFormat(language === 'ar' ? 'ar-MA' : 'en-US').format(price) + ' ' + currency;
   };
 
@@ -321,7 +466,9 @@ const OwnerDashboard = () => {
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">{text.overview}</TabsTrigger>
+            <TabsTrigger value="analytics">{text.analytics}</TabsTrigger>
             <TabsTrigger value="properties">{text.properties}</TabsTrigger>
+            <TabsTrigger value="transactions">{text.transactionsTab}</TabsTrigger>
             <TabsTrigger value="messages">{text.messagesTab}</TabsTrigger>
           </TabsList>
 
@@ -391,6 +538,56 @@ const OwnerDashboard = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="analytics">
+            {/* Analytics Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <Card className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-orange-500/10 rounded-lg">
+                    <TrendingUp className="w-6 h-6 text-orange-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{text.totalTransactions}</p>
+                    <p className="text-2xl font-bold text-foreground">{stats.totalTransactions}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-6 border-destructive">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-red-500/10 rounded-lg">
+                    <CreditCard className="w-6 h-6 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{text.commissionDue}</p>
+                    <p className="text-2xl font-bold text-destructive">{formatPrice(stats.totalCommissionDue)}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-green-500/10 rounded-lg">
+                    <DollarSign className="w-6 h-6 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{text.earningsToday}</p>
+                    <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalEarningsToday)}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-500/10 rounded-lg">
+                    <Calendar className="w-6 h-6 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{text.earningsMonth}</p>
+                    <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalEarningsMonth)}</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </TabsContent>
+
           <TabsContent value="properties">
             {properties.length === 0 ? (
               <Card className="p-12 text-center">
@@ -452,6 +649,48 @@ const OwnerDashboard = () => {
             )}
           </TabsContent>
 
+          <TabsContent value="transactions">
+            <Card className="p-6">
+              {transactions.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">{text.noTransactions}</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-start p-3 text-muted-foreground">{text.transactionType}</th>
+                        <th className="text-start p-3 text-muted-foreground">{text.amount}</th>
+                        <th className="text-start p-3 text-muted-foreground">{text.commission}</th>
+                        <th className="text-start p-3 text-muted-foreground">{text.date}</th>
+                        <th className="text-start p-3 text-muted-foreground"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transactions.map((tx) => (
+                        <tr key={tx.id} className="border-b">
+                          <td className="p-3">
+                            <span className="font-medium">{getTransactionTypeLabel(tx.transaction_type)}</span>
+                            {tx.property_title && (
+                              <p className="text-xs text-muted-foreground">{tx.property_title}</p>
+                            )}
+                          </td>
+                          <td className="p-3">{formatPrice(tx.transaction_amount)}</td>
+                          <td className="p-3 text-destructive">{formatPrice(tx.commission_amount)}</td>
+                          <td className="p-3">{new Date(tx.created_at).toLocaleDateString()}</td>
+                          <td className="p-3">
+                            <Badge variant={tx.commission_paid ? 'default' : 'destructive'}>
+                              {tx.commission_paid ? text.paid : text.unpaid}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
           <TabsContent value="messages">
             <Card className="p-6">
               <Button variant="outline" className="mb-6" asChild>
@@ -482,23 +721,23 @@ const OwnerDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
-
-        <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{text.confirmDelete}</AlertDialogTitle>
-              <AlertDialogDescription>{text.deleteMessage}</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{text.cancel}</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                {text.delete}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </main>
       <Footer />
+
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{text.confirmDelete}</AlertDialogTitle>
+            <AlertDialogDescription>{text.deleteMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{text.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              {text.delete}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
