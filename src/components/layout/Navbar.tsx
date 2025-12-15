@@ -18,6 +18,7 @@ const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'ar', label: 'العربية', flag: '🇸🇦' },
   { code: 'en', label: 'English', flag: '🇬🇧' },
   { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
 ];
 
 const Navbar: React.FC = () => {
@@ -150,6 +151,10 @@ const Navbar: React.FC = () => {
                   </DropdownMenuItem>
                   {(role === 'owner' || role === 'admin') && (
                     <>
+                      <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                        <LayoutDashboard className="w-4 h-4 me-2" />
+                        {dir === 'rtl' ? 'لوحة التحكم' : 'Dashboard'}
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate('/my-properties')}>
                         <Building2 className="w-4 h-4 me-2" />
                         {dir === 'rtl' ? 'عقاراتي' : 'My Properties'}
@@ -163,7 +168,7 @@ const Navbar: React.FC = () => {
                   {role === 'admin' && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
                       <LayoutDashboard className="w-4 h-4 me-2" />
-                      {dir === 'rtl' ? 'لوحة التحكم' : 'Dashboard'}
+                      {dir === 'rtl' ? 'إدارة الموقع' : 'Admin Panel'}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
