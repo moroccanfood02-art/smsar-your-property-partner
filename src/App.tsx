@@ -22,6 +22,7 @@ import AboutPage from "./pages/AboutPage";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import PricingPage from "./pages/PricingPage";
 import SubscriptionSuccessPage from "./pages/SubscriptionSuccessPage";
+import SecuritySettingsPage from "./pages/SecuritySettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/dashboard" element={<OwnerDashboard />} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
+              <Route path="/security" element={<SecuritySettingsPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
