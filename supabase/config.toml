@@ -2,3 +2,6 @@ project_id = "spnzbuuwaptdhxsnbhal"
 
 [functions.make-admin]
 verify_jwt = false
+
+[functions.create-promotion-checkout]
+verify_jwt = false

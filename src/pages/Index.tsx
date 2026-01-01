@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import HeroSection from '@/components/home/HeroSection';
+import PromotedProperties from '@/components/home/PromotedProperties';
 import FeaturedProperties from '@/components/home/FeaturedProperties';
 import LatestProperties from '@/components/home/LatestProperties';
 import WhyChooseUs from '@/components/home/WhyChooseUs';
@@ -13,6 +14,7 @@ const Index: React.FC = () => {
       <Navbar />
       <main>
         <HeroSection />
+        <PromotedProperties />
         <FeaturedProperties />
         <WhyChooseUs />
         <LatestProperties />
