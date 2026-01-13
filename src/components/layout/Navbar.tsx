@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Globe, ChevronDown, User, LogOut, Plus, Building2, MessageSquare, LayoutDashboard, Heart, CreditCard } from 'lucide-react';
+import { Menu, X, Globe, ChevronDown, User, LogOut, Plus, Building2, MessageSquare, LayoutDashboard, Heart, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -143,6 +143,10 @@ const Navbar: React.FC = () => {
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     <User className="w-4 h-4 me-2" />
                     {dir === 'rtl' ? 'الملف الشخصي' : 'Profile'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/security')}>
+                    <Shield className="w-4 h-4 me-2" />
+                    {dir === 'rtl' ? 'إعدادات الأمان' : 'Security Settings'}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/messages')}>
                     <MessageSquare className="w-4 h-4 me-2" />
