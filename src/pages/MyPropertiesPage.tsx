@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, MapPin, Bed, Bath, Maximize } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, MapPin, Bed, Bath, Maximize, Megaphone } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import PromotePropertyDialog from '@/components/property/PromotePropertyDialog';
 
 interface Property {
   id: string;
@@ -58,6 +59,7 @@ const MyPropertiesPage = () => {
       delete: 'حذف',
       view: 'عرض',
       views: 'مشاهدة',
+      promote: 'ترويج',
       deleteConfirm: 'هل أنت متأكد من حذف هذا العقار؟',
       deleteDesc: 'لا يمكن التراجع عن هذا الإجراء',
       cancel: 'إلغاء',
@@ -79,6 +81,7 @@ const MyPropertiesPage = () => {
       delete: 'Supprimer',
       view: 'Voir',
       views: 'vues',
+      promote: 'Promouvoir',
       deleteConfirm: 'Êtes-vous sûr de vouloir supprimer cette propriété?',
       deleteDesc: 'Cette action est irréversible',
       cancel: 'Annuler',
@@ -100,6 +103,7 @@ const MyPropertiesPage = () => {
       delete: 'Delete',
       view: 'View',
       views: 'views',
+      promote: 'Promote',
       deleteConfirm: 'Are you sure you want to delete this property?',
       deleteDesc: 'This action cannot be undone',
       cancel: 'Cancel',
@@ -258,25 +262,29 @@ const MyPropertiesPage = () => {
                     )}
                   </div>
                 </CardContent>
-                <CardFooter className="p-4 pt-0 flex gap-2">
+                <CardFooter className="p-4 pt-0 flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
                     onClick={() => navigate(`/property/${property.id}`)}
                   >
-                    <Eye className="h-4 w-4 mr-1" />
+                    <Eye className="h-4 w-4 me-1" />
                     {text.view}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
                     onClick={() => navigate(`/edit-property/${property.id}`)}
                   >
-                    <Edit className="h-4 w-4 mr-1" />
+                    <Edit className="h-4 w-4 me-1" />
                     {text.edit}
                   </Button>
+                  <PromotePropertyDialog propertyId={property.id} propertyTitle={property.title}>
+                    <Button variant="secondary" size="sm">
+                      <Megaphone className="h-4 w-4 me-1" />
+                      {text.promote}
+                    </Button>
+                  </PromotePropertyDialog>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive" size="sm">
