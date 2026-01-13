@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -14,7 +15,8 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Megaphone, Star, Video, Image, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Megaphone, Star, Video, Image, Loader2, Upload, X } from 'lucide-react';
 
 interface PromotePropertyDialogProps {
   propertyId: string;
@@ -28,10 +30,18 @@ const PromotePropertyDialog = ({
   children,
 }: PromotePropertyDialogProps) => {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedType, setSelectedType] = useState<string>('featured');
+  const [selectedType, setSelectedType] = useState<string>('featured_7');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string>('');
+  const [bannerPreview, setBannerPreview] = useState<string>('');
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const t = {
     ar: {
@@ -49,6 +59,12 @@ const PromotePropertyDialog = ({
       promote: 'ترويج الآن',
       popular: 'الأكثر شعبية',
       error: 'حدث خطأ، يرجى المحاولة مرة أخرى',
+      uploadVideo: 'رفع الفيديو',
+      uploadBanner: 'رفع صورة البانر',
+      videoRequired: 'يرجى رفع الفيديو',
+      bannerRequired: 'يرجى رفع صورة البانر',
+      maxSize: 'الحد الأقصى: 50 ميجابايت',
+      uploading: 'جاري الرفع...',
     },
     en: {
       title: 'Promote Property',
@@ -65,6 +81,12 @@ const PromotePropertyDialog = ({
       promote: 'Promote Now',
       popular: 'Most Popular',
       error: 'An error occurred, please try again',
+      uploadVideo: 'Upload Video',
+      uploadBanner: 'Upload Banner Image',
+      videoRequired: 'Please upload a video',
+      bannerRequired: 'Please upload a banner image',
+      maxSize: 'Max size: 50MB',
+      uploading: 'Uploading...',
     },
     fr: {
       title: 'Promouvoir la propriété',
@@ -81,6 +103,12 @@ const PromotePropertyDialog = ({
       promote: 'Promouvoir maintenant',
       popular: 'Plus populaire',
       error: 'Une erreur s\'est produite, veuillez réessayer',
+      uploadVideo: 'Télécharger la vidéo',
+      uploadBanner: 'Télécharger l\'image de la bannière',
+      videoRequired: 'Veuillez télécharger une vidéo',
+      bannerRequired: 'Veuillez télécharger une image de bannière',
+      maxSize: 'Taille max: 50 Mo',
+      uploading: 'Téléchargement...',
     },
   };
 
@@ -88,38 +116,104 @@ const PromotePropertyDialog = ({
 
   const promotionTypes = [
     {
-      id: 'featured',
+      id: 'featured_7',
       icon: Star,
       title: text.featured,
       description: text.featuredDesc,
       price: text.featuredPrice,
       popular: false,
+      requiresMedia: false,
     },
     {
-      id: 'video',
+      id: 'video_14',
       icon: Video,
       title: text.video,
       description: text.videoDesc,
       price: text.videoPrice,
       popular: true,
+      requiresMedia: 'video',
     },
     {
-      id: 'banner',
+      id: 'banner_30',
       icon: Image,
       title: text.banner,
       description: text.bannerDesc,
       price: text.bannerPrice,
       popular: false,
+      requiresMedia: 'banner',
     },
   ];
 
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVideoFile(file);
+      setVideoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBannerFile(file);
+      setBannerPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadFile = async (file: File, type: 'video' | 'banner'): Promise<string> => {
+    if (!user) throw new Error('Not authenticated');
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${propertyId}_${type}_${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('promotion-media')
+      .upload(fileName, file);
+    
+    if (uploadError) throw uploadError;
+    
+    const { data } = supabase.storage
+      .from('promotion-media')
+      .getPublicUrl(fileName);
+    
+    return data.publicUrl;
+  };
+
   const handlePromote = async () => {
+    const selectedPromotion = promotionTypes.find(p => p.id === selectedType);
+    
+    // Validate media files
+    if (selectedPromotion?.requiresMedia === 'video' && !videoFile) {
+      toast({ title: text.videoRequired, variant: 'destructive' });
+      return;
+    }
+    if (selectedPromotion?.requiresMedia === 'banner' && !bannerFile) {
+      toast({ title: text.bannerRequired, variant: 'destructive' });
+      return;
+    }
+
     setLoading(true);
     try {
+      let videoUrl = '';
+      let bannerImageUrl = '';
+
+      // Upload files if needed
+      if (videoFile && selectedType === 'video_14') {
+        setUploading(true);
+        videoUrl = await uploadFile(videoFile, 'video');
+      }
+      if (bannerFile && selectedType === 'banner_30') {
+        setUploading(true);
+        bannerImageUrl = await uploadFile(bannerFile, 'banner');
+      }
+      setUploading(false);
+
       const { data, error } = await supabase.functions.invoke('create-promotion-checkout', {
         body: {
           propertyId,
           promotionType: selectedType,
+          videoUrl,
+          bannerImageUrl,
         },
       });
 
@@ -128,6 +222,11 @@ const PromotePropertyDialog = ({
       if (data?.url) {
         window.open(data.url, '_blank');
         setOpen(false);
+        // Reset state
+        setVideoFile(null);
+        setBannerFile(null);
+        setVideoPreview('');
+        setBannerPreview('');
       }
     } catch (error) {
       console.error('Promotion error:', error);
@@ -137,13 +236,16 @@ const PromotePropertyDialog = ({
       });
     } finally {
       setLoading(false);
+      setUploading(false);
     }
   };
+
+  const selectedPromotion = promotionTypes.find(p => p.id === selectedType);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Megaphone className="h-5 w-5 text-primary" />
@@ -189,11 +291,92 @@ const PromotePropertyDialog = ({
               </div>
             ))}
           </RadioGroup>
+
+          {/* Video Upload */}
+          {selectedType === 'video_14' && (
+            <div className="mt-4 space-y-2">
+              <Label>{text.uploadVideo}</Label>
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/*"
+                onChange={handleVideoChange}
+                className="hidden"
+              />
+              {videoPreview ? (
+                <div className="relative rounded-lg overflow-hidden">
+                  <video src={videoPreview} className="w-full h-40 object-cover" controls />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8"
+                    onClick={() => {
+                      setVideoFile(null);
+                      setVideoPreview('');
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => videoInputRef.current?.click()}
+                >
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">{text.uploadVideo}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{text.maxSize}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Banner Upload */}
+          {selectedType === 'banner_30' && (
+            <div className="mt-4 space-y-2">
+              <Label>{text.uploadBanner}</Label>
+              <input
+                ref={bannerInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleBannerChange}
+                className="hidden"
+              />
+              {bannerPreview ? (
+                <div className="relative rounded-lg overflow-hidden">
+                  <img src={bannerPreview} alt="Banner preview" className="w-full h-40 object-cover" />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8"
+                    onClick={() => {
+                      setBannerFile(null);
+                      setBannerPreview('');
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => bannerInputRef.current?.click()}
+                >
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">{text.uploadBanner}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{text.maxSize}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <Button onClick={handlePromote} disabled={loading} className="w-full">
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin me-2" />
+        <Button onClick={handlePromote} disabled={loading || uploading} className="w-full">
+          {loading || uploading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin me-2" />
+              {uploading ? text.uploading : ''}
+            </>
           ) : (
             <Megaphone className="h-4 w-4 me-2" />
           )}

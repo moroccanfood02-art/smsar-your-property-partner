@@ -109,7 +109,7 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/my-properties?promotion=success`,
+      success_url: `${req.headers.get("origin")}/promotion-success?type=${promotion.type}`,
       cancel_url: `${req.headers.get("origin")}/my-properties?promotion=cancelled`,
       metadata: {
         user_id: user.id,
@@ -119,6 +119,7 @@ serve(async (req) => {
         video_url: videoUrl || "",
         banner_image_url: bannerImageUrl || ""
       },
+      payment_method_types: ['card'],
     });
 
     logStep("Checkout session created", { sessionId: session.id });
