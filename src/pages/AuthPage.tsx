@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Phone, Building2, Users, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, Building2, Users, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import OTPInput from '@/components/auth/OTPInput';
 import { z } from 'zod';
 
 type AuthMode = 'login' | 'register';
+type AuthStep = 'form' | 'otp';
 type UserRole = 'customer' | 'owner';
 
 const emailSchema = z.string().email();
@@ -24,9 +27,12 @@ const AuthPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<AuthMode>('login');
+  const [step, setStep] = useState<AuthStep>('form');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('customer');
+  const [otpCode, setOtpCode] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Form state
   const [email, setEmail] = useState('');
@@ -67,10 +73,19 @@ const AuthPage: React.FC = () => {
       invalidPassword: 'كلمة السر يجب أن تكون 6 أحرف على الأقل',
       invalidName: 'الاسم يجب أن يكون حرفين على الأقل',
       loginSuccess: 'تم تسجيل الدخول بنجاح',
-      registerSuccess: 'تم إنشاء الحساب بنجاح! تحقق من بريدك الإلكتروني',
+      registerSuccess: 'تم إنشاء الحساب بنجاح!',
       loginError: 'البريد الإلكتروني أو كلمة السر غير صحيحة',
       registerError: 'حدث خطأ أثناء إنشاء الحساب',
       userExists: 'هذا البريد الإلكتروني مسجل بالفعل',
+      otpTitle: 'أدخل رمز التحقق',
+      otpSubtitle: 'تم إرسال رمز التحقق إلى بريدك الإلكتروني',
+      verify: 'تحقق',
+      resend: 'إعادة الإرسال',
+      resendIn: 'إعادة الإرسال خلال',
+      seconds: 'ثانية',
+      otpSent: 'تم إرسال رمز التحقق',
+      otpError: 'رمز التحقق غير صحيح',
+      back: 'رجوع',
     },
     en: {
       welcome: 'Welcome to SMSAR',
@@ -102,10 +117,19 @@ const AuthPage: React.FC = () => {
       invalidPassword: 'Password must be at least 6 characters',
       invalidName: 'Name must be at least 2 characters',
       loginSuccess: 'Successfully signed in',
-      registerSuccess: 'Account created! Check your email for verification',
+      registerSuccess: 'Account created successfully!',
       loginError: 'Invalid email or password',
       registerError: 'Error creating account',
       userExists: 'This email is already registered',
+      otpTitle: 'Enter Verification Code',
+      otpSubtitle: 'A verification code has been sent to your email',
+      verify: 'Verify',
+      resend: 'Resend Code',
+      resendIn: 'Resend in',
+      seconds: 'seconds',
+      otpSent: 'Verification code sent',
+      otpError: 'Invalid verification code',
+      back: 'Back',
     },
     fr: {
       welcome: 'Bienvenue sur SMSAR',
@@ -137,14 +161,100 @@ const AuthPage: React.FC = () => {
       invalidPassword: 'Le mot de passe doit contenir au moins 6 caractères',
       invalidName: 'Le nom doit contenir au moins 2 caractères',
       loginSuccess: 'Connexion réussie',
-      registerSuccess: 'Compte créé! Vérifiez votre email',
+      registerSuccess: 'Compte créé avec succès!',
       loginError: 'Email ou mot de passe invalide',
       registerError: 'Erreur lors de la création du compte',
       userExists: 'Cet email est déjà enregistré',
+      otpTitle: 'Entrez le Code de Vérification',
+      otpSubtitle: 'Un code de vérification a été envoyé à votre email',
+      verify: 'Vérifier',
+      resend: 'Renvoyer le Code',
+      resendIn: 'Renvoyer dans',
+      seconds: 'secondes',
+      otpSent: 'Code de vérification envoyé',
+      otpError: 'Code de vérification invalide',
+      back: 'Retour',
     },
   };
 
   const txt = translations[language];
+
+  // Start resend cooldown timer
+  const startCooldown = () => {
+    setResendCooldown(60);
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const sendOTP = async () => {
+    setLoading(true);
+    try {
+      const response = await supabase.functions.invoke('send-otp', {
+        body: { email, purpose: 'registration', language },
+      });
+
+      if (response.error) throw response.error;
+
+      toast({ title: txt.otpSent });
+      setStep('otp');
+      startCooldown();
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      toast({ title: txt.registerError, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOTPAndRegister = async () => {
+    setLoading(true);
+    try {
+      // Verify OTP
+      const verifyResponse = await supabase.functions.invoke('verify-otp', {
+        body: { email, code: otpCode, purpose: 'registration' },
+      });
+
+      if (verifyResponse.error) throw verifyResponse.error;
+      
+      if (!verifyResponse.data?.valid) {
+        toast({ title: txt.otpError, variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      // OTP is valid, create the account
+      const { error } = await signUp(email, password, {
+        full_name: fullName,
+        phone: phone || undefined,
+        role: selectedRole,
+        country: 'Morocco',
+        language,
+      });
+
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast({ title: txt.userExists, variant: 'destructive' });
+        } else {
+          toast({ title: txt.registerError, variant: 'destructive' });
+        }
+      } else {
+        toast({ title: txt.registerSuccess });
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      toast({ title: txt.otpError, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,6 +283,7 @@ const AuthPage: React.FC = () => {
           toast({ title: txt.loginSuccess });
           navigate('/');
         }
+        setLoading(false);
       } else {
         // Validate name for registration
         if (!nameSchema.safeParse(fullName).success) {
@@ -181,31 +292,102 @@ const AuthPage: React.FC = () => {
           return;
         }
 
-        const { error } = await signUp(email, password, {
-          full_name: fullName,
-          phone: phone || undefined,
-          role: selectedRole,
-          country: 'Morocco',
-          language,
-        });
-
-        if (error) {
-          if (error.message.includes('already registered')) {
-            toast({ title: txt.userExists, variant: 'destructive' });
-          } else {
-            toast({ title: txt.registerError, variant: 'destructive' });
-          }
-        } else {
-          toast({ title: txt.registerSuccess });
-          navigate('/');
-        }
+        // Send OTP for verification
+        await sendOTP();
       }
     } catch (error) {
       toast({ title: mode === 'login' ? txt.loginError : txt.registerError, variant: 'destructive' });
-    } finally {
       setLoading(false);
     }
   };
+
+  const handleResendOTP = async () => {
+    if (resendCooldown > 0) return;
+    await sendOTP();
+  };
+
+  const handleBackToForm = () => {
+    setStep('form');
+    setOtpCode('');
+  };
+
+  // OTP Verification Step
+  if (step === 'otp') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 mb-8 justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-yellow-400 rounded-xl flex items-center justify-center shadow-gold">
+              <span className="text-slate-900 font-bold text-2xl font-cairo">س</span>
+            </div>
+            <span className="text-2xl font-bold text-foreground font-cairo">SMSAR</span>
+          </Link>
+
+          <div className="bg-card rounded-2xl p-8 shadow-elevated border border-border">
+            <h1 className="text-2xl font-bold text-foreground mb-2 text-center font-cairo">
+              {txt.otpTitle}
+            </h1>
+            <p className="text-muted-foreground mb-2 text-center text-sm">
+              {txt.otpSubtitle}
+            </p>
+            <p className="text-amber-500 mb-6 text-center text-sm font-medium" dir="ltr">
+              {email}
+            </p>
+
+            <div className="mb-6">
+              <OTPInput value={otpCode} onChange={setOtpCode} disabled={loading} />
+            </div>
+
+            <Button
+              variant="hero"
+              size="lg"
+              className="w-full gap-2 mb-4"
+              disabled={loading || otpCode.length !== 6}
+              onClick={verifyOTPAndRegister}
+            >
+              {loading ? (
+                <span className="animate-spin">⏳</span>
+              ) : (
+                <>
+                  {txt.verify}
+                  <ArrowIcon className="w-5 h-5" />
+                </>
+              )}
+            </Button>
+
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={handleBackToForm}
+                className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+              >
+                {dir === 'rtl' ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
+                {txt.back}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResendOTP}
+                disabled={resendCooldown > 0 || loading}
+                className={`flex items-center gap-1 ${
+                  resendCooldown > 0 
+                    ? 'text-muted-foreground cursor-not-allowed' 
+                    : 'text-amber-500 hover:text-amber-600'
+                } transition-colors`}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                {resendCooldown > 0 
+                  ? `${txt.resendIn} ${resendCooldown} ${txt.seconds}`
+                  : txt.resend
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -374,7 +556,11 @@ const AuthPage: React.FC = () => {
             {mode === 'login' ? txt.noAccount : txt.hasAccount}{' '}
             <button
               type="button"
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+              onClick={() => {
+                setMode(mode === 'login' ? 'register' : 'login');
+                setStep('form');
+                setOtpCode('');
+              }}
               className="text-amber-500 hover:text-amber-600 font-semibold transition-colors"
             >
               {mode === 'login' ? txt.createAccount : txt.loginNow}
