@@ -94,6 +94,7 @@ interface PromotionData {
   property_title: string;
   promotion_type: string;
   video_url: string | null;
+  banner_image_url: string | null;
   start_date: string;
   end_date: string;
   amount_paid: number;
@@ -122,10 +123,14 @@ const AdminDashboard = () => {
   const [promotions, setPromotions] = useState<PromotionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPromotionDialog, setShowPromotionDialog] = useState(false);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [newPromotion, setNewPromotion] = useState({
     property_id: '',
     promotion_type: 'featured',
     video_url: '',
+    banner_image_url: '',
     duration_days: 7,
     amount_paid: 50,
   });
@@ -194,6 +199,12 @@ const AdminDashboard = () => {
       expired: 'منتهي',
       deactivate: 'إلغاء التفعيل',
       property: 'العقار',
+      bannerImage: 'صورة البانر',
+      uploadBanner: 'رفع صورة',
+      uploadVideo: 'رفع فيديو',
+      uploading: 'جاري الرفع...',
+      viewBanner: 'عرض البانر',
+      viewVideo: 'عرض الفيديو',
     },
     fr: {
       title: 'Tableau de Bord Admin',
@@ -258,6 +269,12 @@ const AdminDashboard = () => {
       expired: 'Expiré',
       deactivate: 'Désactiver',
       property: 'Propriété',
+      bannerImage: 'Image Bannière',
+      uploadBanner: 'Télécharger Image',
+      uploadVideo: 'Télécharger Vidéo',
+      uploading: 'Téléchargement...',
+      viewBanner: 'Voir Bannière',
+      viewVideo: 'Voir Vidéo',
     },
     en: {
       title: 'Admin Dashboard',
@@ -322,6 +339,12 @@ const AdminDashboard = () => {
       expired: 'Expired',
       deactivate: 'Deactivate',
       property: 'Property',
+      bannerImage: 'Banner Image',
+      uploadBanner: 'Upload Image',
+      uploadVideo: 'Upload Video',
+      uploading: 'Uploading...',
+      viewBanner: 'View Banner',
+      viewVideo: 'View Video',
     },
   };
 
@@ -470,6 +493,7 @@ const AdminDashboard = () => {
         property_title: property?.title || 'غير معروف',
         promotion_type: promo.promotion_type,
         video_url: promo.video_url,
+        banner_image_url: promo.banner_image_url,
         start_date: promo.start_date,
         end_date: promo.end_date,
         amount_paid: promo.amount_paid,
@@ -509,40 +533,88 @@ const AdminDashboard = () => {
     const property = properties.find(p => p.id === newPromotion.property_id);
     if (!property) return;
 
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + newPromotion.duration_days);
+    setUploadingMedia(true);
+    let videoUrl = newPromotion.video_url || null;
+    let bannerUrl = newPromotion.banner_image_url || null;
 
-    const { error } = await supabase.from('property_promotions').insert({
-      property_id: newPromotion.property_id,
-      owner_id: property.owner_id,
-      promotion_type: newPromotion.promotion_type,
-      video_url: newPromotion.video_url || null,
-      end_date: endDate.toISOString(),
-      amount_paid: newPromotion.amount_paid,
-      is_active: true,
-    });
+    try {
+      // Upload banner image if provided
+      if (bannerFile) {
+        const fileExt = bannerFile.name.split('.').pop();
+        const fileName = `${newPromotion.property_id}-banner-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('promotion-media')
+          .upload(fileName, bannerFile);
+        
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('promotion-media')
+            .getPublicUrl(fileName);
+          bannerUrl = publicUrl;
+        }
+      }
 
-    if (!error) {
-      toast({ title: text.promotionCreated });
-      setShowPromotionDialog(false);
-      setNewPromotion({
-        property_id: '',
-        promotion_type: 'featured',
-        video_url: '',
-        duration_days: 7,
-        amount_paid: 50,
+      // Upload video file if provided
+      if (videoFile) {
+        const fileExt = videoFile.name.split('.').pop();
+        const fileName = `${newPromotion.property_id}-video-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('promotion-media')
+          .upload(fileName, videoFile);
+        
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('promotion-media')
+            .getPublicUrl(fileName);
+          videoUrl = publicUrl;
+        }
+      }
+
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + newPromotion.duration_days);
+
+      const { error } = await supabase.from('property_promotions').insert({
+        property_id: newPromotion.property_id,
+        owner_id: property.owner_id,
+        promotion_type: newPromotion.promotion_type,
+        video_url: videoUrl,
+        banner_image_url: bannerUrl,
+        end_date: endDate.toISOString(),
+        amount_paid: newPromotion.amount_paid,
+        is_active: true,
       });
 
-      // Send notification to owner
-      await supabase.from('notifications').insert({
-        user_id: property.owner_id,
-        title: 'إعلان جديد لعقارك',
-        message: `تم تفعيل إعلان لعقارك "${property.title}" لمدة ${newPromotion.duration_days} أيام`,
-        type: 'promotion',
-        link: '/owner-dashboard',
-      });
+      if (!error) {
+        toast({ title: text.promotionCreated });
+        setShowPromotionDialog(false);
+        setNewPromotion({
+          property_id: '',
+          promotion_type: 'featured',
+          video_url: '',
+          banner_image_url: '',
+          duration_days: 7,
+          amount_paid: 50,
+        });
+        setBannerFile(null);
+        setVideoFile(null);
 
-      fetchData();
+        // Send notification to owner
+        await supabase.from('notifications').insert({
+          user_id: property.owner_id,
+          title: 'إعلان جديد لعقارك',
+          message: `تم تفعيل إعلان لعقارك "${property.title}" لمدة ${newPromotion.duration_days} أيام`,
+          type: 'promotion',
+          link: '/owner-dashboard',
+        });
+
+        fetchData();
+      }
+    } catch (error) {
+      console.error('Error creating promotion:', error);
+    } finally {
+      setUploadingMedia(false);
     }
   };
 
@@ -851,14 +923,41 @@ const AdminDashboard = () => {
                       </Select>
                     </div>
 
-                    {newPromotion.promotion_type === 'video_ad' && (
+                    {(newPromotion.promotion_type === 'video_ad' || newPromotion.promotion_type === 'homepage') && (
                       <div>
-                        <Label>{text.videoUrl}</Label>
+                        <Label>{text.uploadVideo}</Label>
+                        <Input
+                          type="file"
+                          accept="video/*"
+                          onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                          className="cursor-pointer"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {language === 'ar' ? 'أو أدخل رابط الفيديو:' : 'Or enter video URL:'}
+                        </p>
                         <Input
                           value={newPromotion.video_url}
                           onChange={(e) => setNewPromotion({ ...newPromotion, video_url: e.target.value })}
                           placeholder="https://youtube.com/..."
+                          className="mt-2"
                         />
+                      </div>
+                    )}
+
+                    {(newPromotion.promotion_type === 'banner' || newPromotion.promotion_type === 'homepage') && (
+                      <div>
+                        <Label>{text.bannerImage}</Label>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
+                          className="cursor-pointer"
+                        />
+                        {bannerFile && (
+                          <p className="text-xs text-green-600 mt-1">
+                            ✓ {bannerFile.name}
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -884,10 +983,10 @@ const AdminDashboard = () => {
 
                     <Button
                       onClick={handleCreatePromotion}
-                      disabled={!newPromotion.property_id}
+                      disabled={!newPromotion.property_id || uploadingMedia}
                       className="w-full"
                     >
-                      {text.create}
+                      {uploadingMedia ? text.uploading : text.create}
                     </Button>
                   </div>
                 </DialogContent>
@@ -901,6 +1000,7 @@ const AdminDashboard = () => {
                     <TableRow>
                       <TableHead>{text.property}</TableHead>
                       <TableHead>{text.promotionType}</TableHead>
+                      <TableHead>Media</TableHead>
                       <TableHead>{text.amountPaid}</TableHead>
                       <TableHead>{text.endDate}</TableHead>
                       <TableHead>{text.status}</TableHead>
@@ -915,6 +1015,35 @@ const AdminDashboard = () => {
                           <div className="flex items-center gap-2">
                             {getPromotionIcon(promo.promotion_type)}
                             {getPromotionTypeLabel(promo.promotion_type)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            {promo.banner_image_url && (
+                              <a
+                                href={promo.banner_image_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                              >
+                                <Image className="h-3 w-3" />
+                                {text.viewBanner}
+                              </a>
+                            )}
+                            {promo.video_url && (
+                              <a
+                                href={promo.video_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-purple-500 hover:underline flex items-center gap-1"
+                              >
+                                <Video className="h-3 w-3" />
+                                {text.viewVideo}
+                              </a>
+                            )}
+                            {!promo.banner_image_url && !promo.video_url && (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>{formatPrice(promo.amount_paid)}</TableCell>
