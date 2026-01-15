@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { ArrowRight, ArrowLeft, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const CallToAction: React.FC = () => {
+const CallToAction = forwardRef<HTMLElement>((_, ref) => {
   const { dir } = useLanguage();
   const ArrowIcon = dir === 'rtl' ? ArrowLeft : ArrowRight;
 
   return (
-    <section className="py-20 bg-gradient-hero relative overflow-hidden">
+    <section ref={ref} className="py-20 bg-gradient-hero relative overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-10 start-10 w-64 h-64 bg-gold/10 rounded-full blur-3xl" />
@@ -76,6 +76,8 @@ const CallToAction: React.FC = () => {
       </div>
     </section>
   );
-};
+});
+
+CallToAction.displayName = 'CallToAction';
 
 export default CallToAction;

@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const Footer: React.FC = () => {
+const Footer = forwardRef<HTMLElement>((_, ref) => {
   const { t, dir } = useLanguage();
 
   return (
-    <footer className="bg-navy text-primary-foreground">
+    <footer ref={ref} className="bg-navy text-primary-foreground">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
@@ -186,6 +186,8 @@ const Footer: React.FC = () => {
       </div>
     </footer>
   );
-};
+});
+
+Footer.displayName = 'Footer';
 
 export default Footer;
