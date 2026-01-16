@@ -901,6 +901,158 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="promotions">
+            {/* Promotion Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Star className="h-4 w-4 text-amber-500" />
+                    {text.featured}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-amber-600">
+                    {promotions.filter(p => p.promotion_type === 'featured' && p.is_active).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'ar' ? 'إعلان نشط' : 'active ads'}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Video className="h-4 w-4 text-purple-500" />
+                    {text.video_ad}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {promotions.filter(p => p.promotion_type === 'video_ad' && p.is_active).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'ar' ? 'إعلان نشط' : 'active ads'}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Image className="h-4 w-4 text-blue-500" />
+                    {text.banner}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {promotions.filter(p => p.promotion_type === 'banner' && p.is_active).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'ar' ? 'إعلان نشط' : 'active ads'}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-green-500" />
+                    {language === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatPrice(promotions.reduce((sum, p) => sum + p.amount_paid, 0))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'ar' ? `من ${promotions.length} إعلان` : `from ${promotions.length} ads`}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Promotion Type Distribution Chart */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {language === 'ar' ? 'توزيع الإعلانات حسب النوع' : 'Ads Distribution by Type'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      { type: 'featured', label: text.featured, color: 'bg-amber-500', icon: Star },
+                      { type: 'video_ad', label: text.video_ad, color: 'bg-purple-500', icon: Video },
+                      { type: 'banner', label: text.banner, color: 'bg-blue-500', icon: Image },
+                      { type: 'homepage', label: text.homepage, color: 'bg-pink-500', icon: Megaphone },
+                    ].map(({ type, label, color, icon: Icon }) => {
+                      const count = promotions.filter(p => p.promotion_type === type).length;
+                      const percentage = promotions.length > 0 ? (count / promotions.length) * 100 : 0;
+                      const revenue = promotions.filter(p => p.promotion_type === type).reduce((sum, p) => sum + p.amount_paid, 0);
+                      
+                      return (
+                        <div key={type} className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <Icon className="h-4 w-4" />
+                              <span className="font-medium">{label}</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="text-muted-foreground">{count} {language === 'ar' ? 'إعلان' : 'ads'}</span>
+                              <span className="font-bold">{formatPrice(revenue)}</span>
+                            </div>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full ${color} transition-all duration-500`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {language === 'ar' ? 'ملخص سريع' : 'Quick Summary'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <span className="text-sm">{language === 'ar' ? 'إعلانات نشطة' : 'Active Ads'}</span>
+                    <span className="font-bold text-green-600">{promotions.filter(p => p.is_active).length}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <span className="text-sm">{language === 'ar' ? 'إعلانات منتهية' : 'Expired Ads'}</span>
+                    <span className="font-bold text-red-600">{promotions.filter(p => !p.is_active).length}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <span className="text-sm">{language === 'ar' ? 'متوسط سعر الإعلان' : 'Avg. Ad Price'}</span>
+                    <span className="font-bold text-blue-600">
+                      {promotions.length > 0 
+                        ? formatPrice(promotions.reduce((sum, p) => sum + p.amount_paid, 0) / promotions.length)
+                        : formatPrice(0)
+                      }
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <span className="text-sm">{language === 'ar' ? 'إعلانات بفيديو' : 'With Video'}</span>
+                    <span className="font-bold text-purple-600">{promotions.filter(p => p.video_url).length}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                    <span className="text-sm">{language === 'ar' ? 'إعلانات ببانر' : 'With Banner'}</span>
+                    <span className="font-bold text-amber-600">{promotions.filter(p => p.banner_image_url).length}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="flex justify-end mb-4">
               <Dialog open={showPromotionDialog} onOpenChange={setShowPromotionDialog}>
                 <DialogTrigger asChild>
@@ -960,6 +1112,9 @@ const AdminDashboard = () => {
                           onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
                           className="cursor-pointer"
                         />
+                        {videoFile && (
+                          <p className="text-xs text-green-600 mt-1">✓ {videoFile.name}</p>
+                        )}
                         <p className="text-xs text-muted-foreground mt-1">
                           {language === 'ar' ? 'أو أدخل رابط الفيديو:' : 'Or enter video URL:'}
                         </p>
@@ -982,9 +1137,14 @@ const AdminDashboard = () => {
                           className="cursor-pointer"
                         />
                         {bannerFile && (
-                          <p className="text-xs text-green-600 mt-1">
-                            ✓ {bannerFile.name}
-                          </p>
+                          <div className="mt-2">
+                            <p className="text-xs text-green-600">✓ {bannerFile.name}</p>
+                            <img 
+                              src={URL.createObjectURL(bannerFile)} 
+                              alt="Preview" 
+                              className="mt-2 max-h-32 rounded-lg object-cover"
+                            />
+                          </div>
                         )}
                       </div>
                     )}
