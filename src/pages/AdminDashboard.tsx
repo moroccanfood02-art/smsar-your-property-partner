@@ -205,6 +205,9 @@ const AdminDashboard = () => {
       uploading: 'جاري الرفع...',
       viewBanner: 'عرض البانر',
       viewVideo: 'عرض الفيديو',
+      mediaRequired: 'الوسائط مطلوبة',
+      videoRequired: 'يرجى رفع فيديو للإعلان من نوع فيديو',
+      bannerRequired: 'يرجى رفع صورة للإعلان من نوع بانر',
     },
     fr: {
       title: 'Tableau de Bord Admin',
@@ -275,6 +278,9 @@ const AdminDashboard = () => {
       uploading: 'Téléchargement...',
       viewBanner: 'Voir Bannière',
       viewVideo: 'Voir Vidéo',
+      mediaRequired: 'Média requis',
+      videoRequired: 'Veuillez télécharger une vidéo pour ce type de promotion',
+      bannerRequired: 'Veuillez télécharger une image pour ce type de promotion',
     },
     en: {
       title: 'Admin Dashboard',
@@ -345,6 +351,9 @@ const AdminDashboard = () => {
       uploading: 'Uploading...',
       viewBanner: 'View Banner',
       viewVideo: 'View Video',
+      mediaRequired: 'Media required',
+      videoRequired: 'Please upload a video for video ad promotion',
+      bannerRequired: 'Please upload an image for banner promotion',
     },
   };
 
@@ -532,6 +541,25 @@ const AdminDashboard = () => {
   const handleCreatePromotion = async () => {
     const property = properties.find(p => p.id === newPromotion.property_id);
     if (!property) return;
+
+    // Validate media requirements based on promotion type
+    if (newPromotion.promotion_type === 'video_ad' && !videoFile && !newPromotion.video_url) {
+      toast({ 
+        title: text.mediaRequired, 
+        description: text.videoRequired,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    if (newPromotion.promotion_type === 'banner' && !bannerFile && !newPromotion.banner_image_url) {
+      toast({ 
+        title: text.mediaRequired, 
+        description: text.bannerRequired,
+        variant: 'destructive' 
+      });
+      return;
+    }
 
     setUploadingMedia(true);
     let videoUrl = newPromotion.video_url || null;
