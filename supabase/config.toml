@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.create-promotion-checkout]
 verify_jwt = false
+
+[functions.check-expiring-promotions]
+verify_jwt = false

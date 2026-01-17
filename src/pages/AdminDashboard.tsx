@@ -42,7 +42,10 @@ import {
   Video,
   Image,
   Star,
+  FileText,
+  Bell,
 } from 'lucide-react';
+import { generatePromotionsReport, generateTransactionsReport, generatePropertiesReport } from '@/utils/pdfReports';
 
 interface Stats {
   totalProperties: number;
@@ -126,6 +129,7 @@ const AdminDashboard = () => {
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [checkingExpiring, setCheckingExpiring] = useState(false);
   const [newPromotion, setNewPromotion] = useState({
     property_id: '',
     promotion_type: 'featured',
@@ -208,6 +212,13 @@ const AdminDashboard = () => {
       mediaRequired: 'الوسائط مطلوبة',
       videoRequired: 'يرجى رفع فيديو للإعلان من نوع فيديو',
       bannerRequired: 'يرجى رفع صورة للإعلان من نوع بانر',
+      downloadPDF: 'تحميل PDF',
+      promotionsReport: 'تقرير الإعلانات',
+      transactionsReport: 'تقرير المعاملات',
+      propertiesReport: 'تقرير العقارات',
+      checkExpiring: 'فحص الإعلانات المنتهية',
+      checkingExpiring: 'جاري الفحص...',
+      notificationsSent: 'تم إرسال الإشعارات',
     },
     fr: {
       title: 'Tableau de Bord Admin',
@@ -281,6 +292,13 @@ const AdminDashboard = () => {
       mediaRequired: 'Média requis',
       videoRequired: 'Veuillez télécharger une vidéo pour ce type de promotion',
       bannerRequired: 'Veuillez télécharger une image pour ce type de promotion',
+      downloadPDF: 'Télécharger PDF',
+      promotionsReport: 'Rapport Promotions',
+      transactionsReport: 'Rapport Transactions',
+      propertiesReport: 'Rapport Propriétés',
+      checkExpiring: 'Vérifier Expirations',
+      checkingExpiring: 'Vérification...',
+      notificationsSent: 'Notifications envoyées',
     },
     en: {
       title: 'Admin Dashboard',
@@ -354,6 +372,13 @@ const AdminDashboard = () => {
       mediaRequired: 'Media required',
       videoRequired: 'Please upload a video for video ad promotion',
       bannerRequired: 'Please upload an image for banner promotion',
+      downloadPDF: 'Download PDF',
+      promotionsReport: 'Promotions Report',
+      transactionsReport: 'Transactions Report',
+      propertiesReport: 'Properties Report',
+      checkExpiring: 'Check Expiring',
+      checkingExpiring: 'Checking...',
+      notificationsSent: 'Notifications sent',
     },
   };
 
@@ -655,6 +680,38 @@ const AdminDashboard = () => {
     if (!error) {
       fetchData();
     }
+  };
+
+  const handleCheckExpiringPromotions = async () => {
+    setCheckingExpiring(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-expiring-promotions');
+      
+      if (error) {
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ 
+          title: text.notificationsSent, 
+          description: `${data.notificationsSent} ${language === 'ar' ? 'إشعارات' : 'notifications'}` 
+        });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setCheckingExpiring(false);
+    }
+  };
+
+  const handleExportPromotionsPDF = () => {
+    generatePromotionsReport(promotions, language);
+  };
+
+  const handleExportTransactionsPDF = () => {
+    generateTransactionsReport(transactions, language);
+  };
+
+  const handleExportPropertiesPDF = () => {
+    generatePropertiesReport(properties, language);
   };
 
   const formatPrice = (price: number, currency: string = 'USD') => {
@@ -1053,7 +1110,21 @@ const AdminDashboard = () => {
               </Card>
             </div>
 
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleExportPromotionsPDF}>
+                  <FileText className="h-4 w-4 me-2" />
+                  {text.downloadPDF}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleCheckExpiringPromotions}
+                  disabled={checkingExpiring}
+                >
+                  <Bell className="h-4 w-4 me-2" />
+                  {checkingExpiring ? text.checkingExpiring : text.checkExpiring}
+                </Button>
+              </div>
               <Dialog open={showPromotionDialog} onOpenChange={setShowPromotionDialog}>
                 <DialogTrigger asChild>
                   <Button>
