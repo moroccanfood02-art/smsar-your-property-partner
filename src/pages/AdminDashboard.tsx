@@ -44,6 +44,7 @@ import {
   Star,
   FileText,
   Bell,
+  Loader2,
 } from 'lucide-react';
 import { generatePromotionsReport, generateTransactionsReport, generatePropertiesReport } from '@/utils/pdfReports';
 
@@ -905,6 +906,12 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="transactions">
+            <div className="flex justify-end mb-4">
+              <Button variant="outline" onClick={handleExportTransactionsPDF}>
+                <FileText className="h-4 w-4 me-2" />
+                {text.downloadPDF}
+              </Button>
+            </div>
             <Card>
               <CardContent className="p-0">
                 <Table>
@@ -1136,9 +1143,13 @@ const AdminDashboard = () => {
                   <DialogHeader>
                     <DialogTitle>{text.addPromotion}</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <div>
-                      <Label>{text.selectProperty}</Label>
+                  <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto">
+                    {/* Step 1: Select Property */}
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
+                        <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs">1</span>
+                        {text.selectProperty}
+                      </Label>
                       <Select
                         value={newPromotion.property_id}
                         onValueChange={(value) => setNewPromotion({ ...newPromotion, property_id: value })}
@@ -1156,37 +1167,81 @@ const AdminDashboard = () => {
                       </Select>
                     </div>
 
-                    <div>
-                      <Label>{text.promotionType}</Label>
+                    {/* Step 2: Select Promotion Type */}
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
+                        <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs">2</span>
+                        {text.promotionType}
+                      </Label>
                       <Select
                         value={newPromotion.promotion_type}
-                        onValueChange={(value) => setNewPromotion({ ...newPromotion, promotion_type: value })}
+                        onValueChange={(value) => {
+                          setNewPromotion({ ...newPromotion, promotion_type: value });
+                          // Reset files when changing type
+                          setVideoFile(null);
+                          setBannerFile(null);
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="featured">{text.featured}</SelectItem>
-                          <SelectItem value="video_ad">{text.video_ad}</SelectItem>
-                          <SelectItem value="banner">{text.banner}</SelectItem>
-                          <SelectItem value="homepage">{text.homepage}</SelectItem>
+                          <SelectItem value="featured">
+                            <span className="flex items-center gap-2">
+                              <Star className="h-4 w-4" />
+                              {text.featured}
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="video_ad">
+                            <span className="flex items-center gap-2">
+                              <Video className="h-4 w-4" />
+                              {text.video_ad}
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="banner">
+                            <span className="flex items-center gap-2">
+                              <Image className="h-4 w-4" />
+                              {text.banner}
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="homepage">
+                            <span className="flex items-center gap-2">
+                              <Megaphone className="h-4 w-4" />
+                              {text.homepage}
+                            </span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
+                    {/* Step 3: Upload Media (shown based on type) */}
                     {(newPromotion.promotion_type === 'video_ad' || newPromotion.promotion_type === 'homepage') && (
-                      <div>
-                        <Label>{text.uploadVideo}</Label>
+                      <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-2 border-dashed border-purple-300 dark:border-purple-700">
+                        <Label className="text-sm font-semibold flex items-center gap-2 mb-2 text-purple-700 dark:text-purple-300">
+                          <span className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs">3</span>
+                          <Video className="h-4 w-4" />
+                          {text.uploadVideo} *
+                        </Label>
                         <Input
                           type="file"
                           accept="video/*"
                           onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                          className="cursor-pointer"
+                          className="cursor-pointer bg-background"
                         />
                         {videoFile && (
-                          <p className="text-xs text-green-600 mt-1">✓ {videoFile.name}</p>
+                          <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
+                            <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4" />
+                              {videoFile.name}
+                            </p>
+                            <video 
+                              src={URL.createObjectURL(videoFile)} 
+                              className="mt-2 max-h-32 rounded-lg"
+                              controls
+                            />
+                          </div>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-2">
                           {language === 'ar' ? 'أو أدخل رابط الفيديو:' : 'Or enter video URL:'}
                         </p>
                         <Input
@@ -1199,17 +1254,26 @@ const AdminDashboard = () => {
                     )}
 
                     {(newPromotion.promotion_type === 'banner' || newPromotion.promotion_type === 'homepage') && (
-                      <div>
-                        <Label>{text.bannerImage}</Label>
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-dashed border-blue-300 dark:border-blue-700">
+                        <Label className="text-sm font-semibold flex items-center gap-2 mb-2 text-blue-700 dark:text-blue-300">
+                          <span className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">
+                            {newPromotion.promotion_type === 'homepage' ? '4' : '3'}
+                          </span>
+                          <Image className="h-4 w-4" />
+                          {text.bannerImage} *
+                        </Label>
                         <Input
                           type="file"
                           accept="image/*"
                           onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
-                          className="cursor-pointer"
+                          className="cursor-pointer bg-background"
                         />
                         {bannerFile && (
-                          <div className="mt-2">
-                            <p className="text-xs text-green-600">✓ {bannerFile.name}</p>
+                          <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
+                            <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4" />
+                              {bannerFile.name}
+                            </p>
                             <img 
                               src={URL.createObjectURL(bannerFile)} 
                               alt="Preview" 
@@ -1220,24 +1284,27 @@ const AdminDashboard = () => {
                       </div>
                     )}
 
-                    <div>
-                      <Label>{text.duration}</Label>
-                      <Input
-                        type="number"
-                        value={newPromotion.duration_days}
-                        onChange={(e) => setNewPromotion({ ...newPromotion, duration_days: parseInt(e.target.value) })}
-                        min={1}
-                      />
-                    </div>
+                    {/* Step 4: Duration and Amount */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>{text.duration}</Label>
+                        <Input
+                          type="number"
+                          value={newPromotion.duration_days}
+                          onChange={(e) => setNewPromotion({ ...newPromotion, duration_days: parseInt(e.target.value) })}
+                          min={1}
+                        />
+                      </div>
 
-                    <div>
-                      <Label>{text.amountPaid} ($)</Label>
-                      <Input
-                        type="number"
-                        value={newPromotion.amount_paid}
-                        onChange={(e) => setNewPromotion({ ...newPromotion, amount_paid: parseFloat(e.target.value) })}
-                        min={0}
-                      />
+                      <div>
+                        <Label>{text.amountPaid} ($)</Label>
+                        <Input
+                          type="number"
+                          value={newPromotion.amount_paid}
+                          onChange={(e) => setNewPromotion({ ...newPromotion, amount_paid: parseFloat(e.target.value) })}
+                          min={0}
+                        />
+                      </div>
                     </div>
 
                     <Button
@@ -1245,7 +1312,17 @@ const AdminDashboard = () => {
                       disabled={!newPromotion.property_id || uploadingMedia}
                       className="w-full"
                     >
-                      {uploadingMedia ? text.uploading : text.create}
+                      {uploadingMedia ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin me-2" />
+                          {text.uploading}
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 me-2" />
+                          {text.create}
+                        </>
+                      )}
                     </Button>
                   </div>
                 </DialogContent>
@@ -1361,6 +1438,12 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="properties">
+            <div className="flex justify-end mb-4">
+              <Button variant="outline" onClick={handleExportPropertiesPDF}>
+                <FileText className="h-4 w-4 me-2" />
+                {text.downloadPDF}
+              </Button>
+            </div>
             <Card>
               <CardContent className="p-0">
                 <Table>
