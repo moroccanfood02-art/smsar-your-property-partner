@@ -45,8 +45,11 @@ import {
   FileText,
   Bell,
   Loader2,
+  RefreshCw,
+  BarChart3,
 } from 'lucide-react';
 import { generatePromotionsReport, generateTransactionsReport, generatePropertiesReport } from '@/utils/pdfReports';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 interface Stats {
   totalProperties: number;
@@ -131,6 +134,7 @@ const AdminDashboard = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [checkingExpiring, setCheckingExpiring] = useState(false);
+  const [autoRenewing, setAutoRenewing] = useState(false);
   const [newPromotion, setNewPromotion] = useState({
     property_id: '',
     promotion_type: 'featured',
@@ -220,6 +224,12 @@ const AdminDashboard = () => {
       checkExpiring: 'فحص الإعلانات المنتهية',
       checkingExpiring: 'جاري الفحص...',
       notificationsSent: 'تم إرسال الإشعارات',
+      autoRenew: 'التجديد التلقائي',
+      autoRenewing: 'جاري التجديد...',
+      autoRenewComplete: 'تم فحص الإعلانات المنتهية',
+      promotionStats: 'إحصائيات الإعلانات',
+      monthlyRevenue: 'الإيرادات الشهرية',
+      promotionsByType: 'الإعلانات حسب النوع',
     },
     fr: {
       title: 'Tableau de Bord Admin',
@@ -300,6 +310,12 @@ const AdminDashboard = () => {
       checkExpiring: 'Vérifier Expirations',
       checkingExpiring: 'Vérification...',
       notificationsSent: 'Notifications envoyées',
+      autoRenew: 'Renouvellement Auto',
+      autoRenewing: 'Renouvellement...',
+      autoRenewComplete: 'Promotions expirées vérifiées',
+      promotionStats: 'Statistiques Promotions',
+      monthlyRevenue: 'Revenus Mensuels',
+      promotionsByType: 'Promotions par Type',
     },
     en: {
       title: 'Admin Dashboard',
@@ -380,6 +396,12 @@ const AdminDashboard = () => {
       checkExpiring: 'Check Expiring',
       checkingExpiring: 'Checking...',
       notificationsSent: 'Notifications sent',
+      autoRenew: 'Auto Renew',
+      autoRenewing: 'Renewing...',
+      autoRenewComplete: 'Expired promotions checked',
+      promotionStats: 'Promotion Stats',
+      monthlyRevenue: 'Monthly Revenue',
+      promotionsByType: 'Promotions by Type',
     },
   };
 
@@ -701,6 +723,67 @@ const AdminDashboard = () => {
     } finally {
       setCheckingExpiring(false);
     }
+  };
+
+  const handleAutoRenewPromotions = async () => {
+    setAutoRenewing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('auto-renew-promotions');
+      
+      if (error) {
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ 
+          title: text.autoRenewComplete, 
+          description: `${data.notificationsCount || 0} ${language === 'ar' ? 'إشعارات تجديد' : 'renewal notifications'}` 
+        });
+        fetchData();
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setAutoRenewing(false);
+    }
+  };
+
+  // Calculate chart data
+  const getPromotionChartData = () => {
+    const typeData = [
+      { name: text.featured, value: promotions.filter(p => p.promotion_type === 'featured').length, color: '#F59E0B' },
+      { name: text.video_ad, value: promotions.filter(p => p.promotion_type === 'video_ad').length, color: '#8B5CF6' },
+      { name: text.banner, value: promotions.filter(p => p.promotion_type === 'banner').length, color: '#3B82F6' },
+      { name: text.homepage, value: promotions.filter(p => p.promotion_type === 'homepage').length, color: '#EC4899' },
+    ].filter(d => d.value > 0);
+    return typeData;
+  };
+
+  const getMonthlyRevenueData = () => {
+    const monthlyData: Record<string, number> = {};
+    const now = new Date();
+    
+    // Last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = date.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { month: 'short' });
+      monthlyData[monthKey] = 0;
+    }
+
+    promotions.forEach(p => {
+      const promoDate = new Date(p.start_date);
+      const monthKey = promoDate.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { month: 'short' });
+      if (monthlyData[monthKey] !== undefined) {
+        monthlyData[monthKey] += p.amount_paid;
+      }
+    });
+
+    return Object.entries(monthlyData).map(([name, revenue]) => ({ name, revenue }));
+  };
+
+  const getStatusData = () => {
+    return [
+      { name: language === 'ar' ? 'نشط' : 'Active', value: promotions.filter(p => p.is_active).length, color: '#22C55E' },
+      { name: language === 'ar' ? 'منتهي' : 'Expired', value: promotions.filter(p => !p.is_active).length, color: '#EF4444' },
+    ].filter(d => d.value > 0);
   };
 
   const handleExportPromotionsPDF = () => {
@@ -1036,6 +1119,62 @@ const AdminDashboard = () => {
               </Card>
             </div>
 
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Pie Chart - Promotion by Type */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    {text.promotionsByType}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={getPromotionChartData()}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value}`}
+                      >
+                        {getPromotionChartData().map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Bar Chart - Monthly Revenue */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    {text.monthlyRevenue}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={getMonthlyRevenueData()}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => [`$${value}`, language === 'ar' ? 'الإيرادات' : 'Revenue']} />
+                      <Bar dataKey="revenue" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Promotion Type Distribution Chart */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               <Card className="lg:col-span-2">
@@ -1117,8 +1256,8 @@ const AdminDashboard = () => {
               </Card>
             </div>
 
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex gap-2">
+            <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button variant="outline" onClick={handleExportPromotionsPDF}>
                   <FileText className="h-4 w-4 me-2" />
                   {text.downloadPDF}
@@ -1130,6 +1269,15 @@ const AdminDashboard = () => {
                 >
                   <Bell className="h-4 w-4 me-2" />
                   {checkingExpiring ? text.checkingExpiring : text.checkExpiring}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleAutoRenewPromotions}
+                  disabled={autoRenewing}
+                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                >
+                  <RefreshCw className={`h-4 w-4 me-2 ${autoRenewing ? 'animate-spin' : ''}`} />
+                  {autoRenewing ? text.autoRenewing : text.autoRenew}
                 </Button>
               </div>
               <Dialog open={showPromotionDialog} onOpenChange={setShowPromotionDialog}>
