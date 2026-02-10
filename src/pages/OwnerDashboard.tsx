@@ -10,29 +10,18 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Building2,
-  Eye,
-  MessageSquare,
-  Plus,
-  Pencil,
-  Trash2,
-  TrendingUp,
-  Home,
-  DollarSign,
-  Calendar,
-  CreditCard,
+  Building2, Eye, MessageSquare, Plus, Pencil, Trash2,
+  TrendingUp, Home, DollarSign, Calendar, CreditCard,
 } from 'lucide-react';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import {
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer, LineChart, Line,
+} from 'recharts';
 
 interface Property {
   id: string;
@@ -68,9 +57,11 @@ interface Transaction {
   property_title?: string;
 }
 
+const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6'];
+
 const OwnerDashboard = () => {
   const { user, loading: authLoading, role } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
@@ -88,196 +79,11 @@ const OwnerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const t = {
-    ar: {
-      title: 'لوحة تحكم المالك',
-      myProperties: 'عقاراتي',
-      totalViews: 'إجمالي المشاهدات',
-      totalMessages: 'إجمالي الرسائل',
-      activeListings: 'الإعلانات النشطة',
-      addProperty: 'إضافة عقار',
-      edit: 'تعديل',
-      delete: 'حذف',
-      statistics: 'الإحصائيات',
-      recentMessages: 'أحدث الرسائل',
-      viewAllMessages: 'عرض كل الرسائل',
-      noProperties: 'لا توجد عقارات',
-      addFirstProperty: 'أضف أول عقار لك',
-      confirmDelete: 'تأكيد الحذف',
-      deleteMessage: 'هل أنت متأكد من حذف هذا العقار؟',
-      cancel: 'إلغاء',
-      views: 'مشاهدة',
-      overview: 'نظرة عامة',
-      properties: 'العقارات',
-      messagesTab: 'الرسائل',
-      available: 'متاح',
-      sold: 'تم البيع',
-      rented: 'تم الكراء',
-      notAvailable: 'غير متاح',
-      propertyDeleted: 'تم حذف العقار بنجاح',
-      noAccess: 'لا يمكنك الوصول لهذه الصفحة',
-      analytics: 'التحليلات',
-      totalTransactions: 'إجمالي المعاملات',
-      commissionDue: 'العمولة المستحقة',
-      earningsToday: 'أرباح اليوم',
-      earningsMonth: 'أرباح الشهر',
-      transactionsTab: 'المعاملات',
-      transactionType: 'نوع المعاملة',
-      amount: 'المبلغ',
-      commission: 'العمولة',
-      paid: 'مدفوع',
-      unpaid: 'غير مدفوع',
-      date: 'التاريخ',
-      daily_rent: 'كراء يومي',
-      monthly_rent: 'كراء شهري',
-      permanent_rent: 'كراء دائم',
-      sale: 'بيع',
-      noTransactions: 'لا توجد معاملات',
-    },
-    en: {
-      title: 'Owner Dashboard',
-      myProperties: 'My Properties',
-      totalViews: 'Total Views',
-      totalMessages: 'Total Messages',
-      activeListings: 'Active Listings',
-      addProperty: 'Add Property',
-      edit: 'Edit',
-      delete: 'Delete',
-      statistics: 'Statistics',
-      recentMessages: 'Recent Messages',
-      viewAllMessages: 'View All Messages',
-      noProperties: 'No Properties',
-      addFirstProperty: 'Add your first property',
-      confirmDelete: 'Confirm Delete',
-      deleteMessage: 'Are you sure you want to delete this property?',
-      cancel: 'Cancel',
-      views: 'views',
-      overview: 'Overview',
-      properties: 'Properties',
-      messagesTab: 'Messages',
-      available: 'Available',
-      sold: 'Sold',
-      rented: 'Rented',
-      notAvailable: 'Not Available',
-      propertyDeleted: 'Property deleted successfully',
-      noAccess: 'You cannot access this page',
-      analytics: 'Analytics',
-      totalTransactions: 'Total Transactions',
-      commissionDue: 'Commission Due',
-      earningsToday: "Today's Earnings",
-      earningsMonth: "Month's Earnings",
-      transactionsTab: 'Transactions',
-      transactionType: 'Transaction Type',
-      amount: 'Amount',
-      commission: 'Commission',
-      paid: 'Paid',
-      unpaid: 'Unpaid',
-      date: 'Date',
-      daily_rent: 'Daily Rent',
-      monthly_rent: 'Monthly Rent',
-      permanent_rent: 'Permanent Rent',
-      sale: 'Sale',
-      noTransactions: 'No transactions',
-    },
-    fr: {
-      title: 'Tableau de Bord Propriétaire',
-      myProperties: 'Mes Propriétés',
-      totalViews: 'Vues Totales',
-      totalMessages: 'Messages Totaux',
-      activeListings: 'Annonces Actives',
-      addProperty: 'Ajouter une Propriété',
-      edit: 'Modifier',
-      delete: 'Supprimer',
-      statistics: 'Statistiques',
-      recentMessages: 'Messages Récents',
-      viewAllMessages: 'Voir Tous les Messages',
-      noProperties: 'Aucune Propriété',
-      addFirstProperty: 'Ajoutez votre première propriété',
-      confirmDelete: 'Confirmer la Suppression',
-      deleteMessage: 'Êtes-vous sûr de vouloir supprimer cette propriété?',
-      cancel: 'Annuler',
-      views: 'vues',
-      overview: 'Aperçu',
-      properties: 'Propriétés',
-      messagesTab: 'Messages',
-      available: 'Disponible',
-      sold: 'Vendu',
-      rented: 'Loué',
-      notAvailable: 'Non Disponible',
-      propertyDeleted: 'Propriété supprimée avec succès',
-      noAccess: 'Vous ne pouvez pas accéder à cette page',
-      analytics: 'Analyses',
-      totalTransactions: 'Transactions Totales',
-      commissionDue: 'Commission Due',
-      earningsToday: "Gains Aujourd'hui",
-      earningsMonth: 'Gains du Mois',
-      transactionsTab: 'Transactions',
-      transactionType: 'Type de Transaction',
-      amount: 'Montant',
-      commission: 'Commission',
-      paid: 'Payé',
-      unpaid: 'Non Payé',
-      date: 'Date',
-      daily_rent: 'Location Journalière',
-      monthly_rent: 'Location Mensuelle',
-      permanent_rent: 'Location Permanente',
-      sale: 'Vente',
-      noTransactions: 'Aucune transaction',
-    },
-    es: {
-      title: 'Panel del Propietario',
-      myProperties: 'Mis Propiedades',
-      totalViews: 'Vistas Totales',
-      totalMessages: 'Mensajes Totales',
-      activeListings: 'Anuncios Activos',
-      addProperty: 'Agregar Propiedad',
-      edit: 'Editar',
-      delete: 'Eliminar',
-      statistics: 'Estadísticas',
-      recentMessages: 'Mensajes Recientes',
-      viewAllMessages: 'Ver Todos los Mensajes',
-      noProperties: 'Sin Propiedades',
-      addFirstProperty: 'Agrega tu primera propiedad',
-      confirmDelete: 'Confirmar Eliminación',
-      deleteMessage: '¿Estás seguro de que quieres eliminar esta propiedad?',
-      cancel: 'Cancelar',
-      views: 'vistas',
-      overview: 'Resumen',
-      properties: 'Propiedades',
-      messagesTab: 'Mensajes',
-      available: 'Disponible',
-      sold: 'Vendido',
-      rented: 'Alquilado',
-      notAvailable: 'No Disponible',
-      propertyDeleted: 'Propiedad eliminada con éxito',
-      noAccess: 'No puedes acceder a esta página',
-      analytics: 'Análisis',
-      totalTransactions: 'Transacciones Totales',
-      commissionDue: 'Comisión Pendiente',
-      earningsToday: 'Ganancias de Hoy',
-      earningsMonth: 'Ganancias del Mes',
-      transactionsTab: 'Transacciones',
-      transactionType: 'Tipo de Transacción',
-      amount: 'Monto',
-      commission: 'Comisión',
-      paid: 'Pagado',
-      unpaid: 'No Pagado',
-      date: 'Fecha',
-      daily_rent: 'Alquiler Diario',
-      monthly_rent: 'Alquiler Mensual',
-      permanent_rent: 'Alquiler Permanente',
-      sale: 'Venta',
-      noTransactions: 'Sin transacciones',
-    },
-  };
-
-  const text = t[language as keyof typeof t] || t.ar;
-
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
     } else if (!authLoading && user && role !== 'owner' && role !== 'admin') {
-      toast({ title: text.noAccess, variant: 'destructive' });
+      toast({ title: t('noAccess'), variant: 'destructive' });
       navigate('/');
     }
   }, [user, authLoading, role, navigate]);
@@ -291,7 +97,6 @@ const OwnerDashboard = () => {
   const fetchData = async () => {
     if (!user) return;
 
-    // Fetch properties
     const { data: propertiesData } = await supabase
       .from('properties')
       .select('*')
@@ -305,7 +110,6 @@ const OwnerDashboard = () => {
       setStats((prev) => ({ ...prev, totalViews, activeListings }));
     }
 
-    // Fetch messages
     const { data: messagesData } = await supabase
       .from('messages')
       .select('*')
@@ -321,7 +125,6 @@ const OwnerDashboard = () => {
             .select('full_name')
             .eq('user_id', msg.sender_id)
             .maybeSingle();
-
           let propertyTitle = null;
           if (msg.property_id) {
             const { data: property } = await supabase
@@ -331,19 +134,13 @@ const OwnerDashboard = () => {
               .maybeSingle();
             propertyTitle = property?.title;
           }
-
-          return {
-            ...msg,
-            sender_name: profile?.full_name || 'مستخدم',
-            property_title: propertyTitle,
-          };
+          return { ...msg, sender_name: profile?.full_name || t('customer'), property_title: propertyTitle };
         })
       );
       setMessages(enrichedMessages);
       setStats((prev) => ({ ...prev, totalMessages: messagesData.length }));
     }
 
-    // Fetch transactions
     const { data: transactionsData } = await supabase
       .from('transactions')
       .select('*')
@@ -374,11 +171,9 @@ const OwnerDashboard = () => {
       const unpaidCommission = transactionsData
         .filter((tx: any) => !tx.commission_paid)
         .reduce((sum: number, tx: any) => sum + (tx.commission_amount || 0), 0);
-
       const earningsToday = transactionsData
         .filter((tx: any) => new Date(tx.created_at) >= today)
         .reduce((sum: number, tx: any) => sum + (tx.transaction_amount || 0), 0);
-
       const earningsMonth = transactionsData
         .filter((tx: any) => new Date(tx.created_at) >= startOfMonth)
         .reduce((sum: number, tx: any) => sum + (tx.transaction_amount || 0), 0);
@@ -397,22 +192,20 @@ const OwnerDashboard = () => {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-
     const { error } = await supabase.from('properties').delete().eq('id', deleteId);
-
     if (!error) {
       setProperties((prev) => prev.filter((p) => p.id !== deleteId));
-      toast({ title: text.propertyDeleted });
+      toast({ title: t('propertyDeleted') });
     }
     setDeleteId(null);
   };
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      available: text.available,
-      sold: text.sold,
-      rented: text.rented,
-      unavailable: text.notAvailable,
+      available: t('available'),
+      sold: t('sold'),
+      rented: t('rented'),
+      unavailable: t('notAvailable'),
     };
     return labels[status] || status;
   };
@@ -428,18 +221,47 @@ const OwnerDashboard = () => {
   };
 
   const getTransactionTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      daily_rent: text.daily_rent,
-      monthly_rent: text.monthly_rent,
-      permanent_rent: text.permanent_rent,
-      sale: text.sale,
+    const map: Record<string, string> = {
+      daily_rent: t('daily_rent'),
+      monthly_rent: t('monthly_rent'),
+      permanent_rent: t('permanent_rent'),
+      sale: t('sale'),
     };
-    return labels[type] || type;
+    return map[type] || type;
   };
 
   const formatPrice = (price: number, currency: string = 'USD') => {
     return new Intl.NumberFormat(language === 'ar' ? 'ar-MA' : 'en-US').format(price) + ' ' + currency;
   };
+
+  // Chart Data
+  const statusData = (() => {
+    const counts: Record<string, number> = {};
+    properties.forEach((p) => {
+      counts[p.status] = (counts[p.status] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({
+      name: getStatusLabel(name),
+      value,
+    }));
+  })();
+
+  const monthlyEarningsData = (() => {
+    const months: Record<string, number> = {};
+    transactions.forEach((tx) => {
+      const month = new Date(tx.created_at).toLocaleDateString(language === 'ar' ? 'ar' : 'en', { month: 'short', year: '2-digit' });
+      months[month] = (months[month] || 0) + tx.transaction_amount;
+    });
+    return Object.entries(months).slice(-6).map(([name, amount]) => ({ name, amount }));
+  })();
+
+  const viewsByProperty = properties
+    .sort((a, b) => (b.views_count || 0) - (a.views_count || 0))
+    .slice(0, 5)
+    .map((p) => ({
+      name: p.title.length > 15 ? p.title.slice(0, 15) + '...' : p.title,
+      views: p.views_count || 0,
+    }));
 
   if (authLoading || loading) {
     return (
@@ -454,26 +276,25 @@ const OwnerDashboard = () => {
       <Navbar />
       <main className="container mx-auto px-4 py-8 mt-20">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-foreground">{text.title}</h1>
+          <h1 className="text-3xl font-bold text-foreground">{t('ownerDashboard')}</h1>
           <Button asChild>
             <Link to="/add-property">
               <Plus className="w-4 h-4 me-2" />
-              {text.addProperty}
+              {t('addProperty')}
             </Link>
           </Button>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="overview">{text.overview}</TabsTrigger>
-            <TabsTrigger value="analytics">{text.analytics}</TabsTrigger>
-            <TabsTrigger value="properties">{text.properties}</TabsTrigger>
-            <TabsTrigger value="transactions">{text.transactionsTab}</TabsTrigger>
-            <TabsTrigger value="messages">{text.messagesTab}</TabsTrigger>
+            <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
+            <TabsTrigger value="analytics">{t('analytics')}</TabsTrigger>
+            <TabsTrigger value="properties">{t('properties')}</TabsTrigger>
+            <TabsTrigger value="transactions">{t('transactionsTab')}</TabsTrigger>
+            <TabsTrigger value="messages">{t('messages')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <Card className="p-6">
                 <div className="flex items-center gap-4">
@@ -481,7 +302,7 @@ const OwnerDashboard = () => {
                     <Eye className="w-6 h-6 text-blue-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{text.totalViews}</p>
+                    <p className="text-sm text-muted-foreground">{t('totalViews')}</p>
                     <p className="text-2xl font-bold text-foreground">{stats.totalViews}</p>
                   </div>
                 </div>
@@ -492,7 +313,7 @@ const OwnerDashboard = () => {
                     <MessageSquare className="w-6 h-6 text-green-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{text.totalMessages}</p>
+                    <p className="text-sm text-muted-foreground">{t('totalMessages')}</p>
                     <p className="text-2xl font-bold text-foreground">{stats.totalMessages}</p>
                   </div>
                 </div>
@@ -503,23 +324,22 @@ const OwnerDashboard = () => {
                     <Building2 className="w-6 h-6 text-purple-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{text.activeListings}</p>
+                    <p className="text-sm text-muted-foreground">{t('activeListings')}</p>
                     <p className="text-2xl font-bold text-foreground">{stats.activeListings}</p>
                   </div>
                 </div>
               </Card>
             </div>
 
-            {/* Recent Messages */}
             <Card className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-foreground">{text.recentMessages}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{t('recentMessages')}</h2>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/messages">{text.viewAllMessages}</Link>
+                  <Link to="/messages">{t('viewAllMessages')}</Link>
                 </Button>
               </div>
               {messages.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">لا توجد رسائل</p>
+                <p className="text-muted-foreground text-center py-8">{t('noMessages')}</p>
               ) : (
                 <div className="space-y-4">
                   {messages.map((msg) => (
@@ -528,7 +348,7 @@ const OwnerDashboard = () => {
                         <p className="font-medium text-foreground">{msg.sender_name}</p>
                         <p className="text-sm text-muted-foreground line-clamp-1">{msg.content}</p>
                         {msg.property_title && (
-                          <p className="text-xs text-primary mt-1">بخصوص: {msg.property_title}</p>
+                          <p className="text-xs text-primary mt-1">{t('regarding')}: {msg.property_title}</p>
                         )}
                       </div>
                     </div>
@@ -539,7 +359,6 @@ const OwnerDashboard = () => {
           </TabsContent>
 
           <TabsContent value="analytics">
-            {/* Analytics Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <Card className="p-6">
                 <div className="flex items-center gap-4">
@@ -547,7 +366,7 @@ const OwnerDashboard = () => {
                     <TrendingUp className="w-6 h-6 text-orange-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{text.totalTransactions}</p>
+                    <p className="text-sm text-muted-foreground">{t('totalTransactions')}</p>
                     <p className="text-2xl font-bold text-foreground">{stats.totalTransactions}</p>
                   </div>
                 </div>
@@ -558,7 +377,7 @@ const OwnerDashboard = () => {
                     <CreditCard className="w-6 h-6 text-red-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{text.commissionDue}</p>
+                    <p className="text-sm text-muted-foreground">{t('commissionDue')}</p>
                     <p className="text-2xl font-bold text-destructive">{formatPrice(stats.totalCommissionDue)}</p>
                   </div>
                 </div>
@@ -569,7 +388,7 @@ const OwnerDashboard = () => {
                     <DollarSign className="w-6 h-6 text-green-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{text.earningsToday}</p>
+                    <p className="text-sm text-muted-foreground">{t('earningsToday')}</p>
                     <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalEarningsToday)}</p>
                   </div>
                 </div>
@@ -580,10 +399,69 @@ const OwnerDashboard = () => {
                     <Calendar className="w-6 h-6 text-blue-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{text.earningsMonth}</p>
+                    <p className="text-sm text-muted-foreground">{t('earningsMonth')}</p>
                     <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalEarningsMonth)}</p>
                   </div>
                 </div>
+              </Card>
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Properties by Status */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">{t('propertiesByStatus')}</h3>
+                {statusData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                        {statusData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">{t('noProperties')}</p>
+                )}
+              </Card>
+
+              {/* Views by Property */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">{t('viewsChart')}</h3>
+                {viewsByProperty.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={viewsByProperty}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="views" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">{t('noProperties')}</p>
+                )}
+              </Card>
+
+              {/* Monthly Earnings */}
+              <Card className="p-6 lg:col-span-2">
+                <h3 className="text-lg font-semibold mb-4">{t('monthlyEarnings')}</h3>
+                {monthlyEarningsData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={monthlyEarningsData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="amount" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">{t('noTransactions')}</p>
+                )}
               </Card>
             </div>
           </TabsContent>
@@ -592,12 +470,12 @@ const OwnerDashboard = () => {
             {properties.length === 0 ? (
               <Card className="p-12 text-center">
                 <Home className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">{text.noProperties}</h3>
-                <p className="text-muted-foreground mb-6">{text.addFirstProperty}</p>
+                <h3 className="text-xl font-semibold text-foreground mb-2">{t('noProperties')}</h3>
+                <p className="text-muted-foreground mb-6">{t('addFirstProperty')}</p>
                 <Button asChild>
                   <Link to="/add-property">
                     <Plus className="w-4 h-4 me-2" />
-                    {text.addProperty}
+                    {t('addProperty')}
                   </Link>
                 </Button>
               </Card>
@@ -624,7 +502,7 @@ const OwnerDashboard = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground flex items-center gap-1">
                           <Eye className="w-4 h-4" />
-                          {property.views_count || 0} {text.views}
+                          {property.views_count || 0} {t('views')}
                         </span>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" asChild>
@@ -652,16 +530,16 @@ const OwnerDashboard = () => {
           <TabsContent value="transactions">
             <Card className="p-6">
               {transactions.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">{text.noTransactions}</p>
+                <p className="text-muted-foreground text-center py-8">{t('noTransactions')}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-start p-3 text-muted-foreground">{text.transactionType}</th>
-                        <th className="text-start p-3 text-muted-foreground">{text.amount}</th>
-                        <th className="text-start p-3 text-muted-foreground">{text.commission}</th>
-                        <th className="text-start p-3 text-muted-foreground">{text.date}</th>
+                        <th className="text-start p-3 text-muted-foreground">{t('transactionType')}</th>
+                        <th className="text-start p-3 text-muted-foreground">{t('amount')}</th>
+                        <th className="text-start p-3 text-muted-foreground">{t('commission')}</th>
+                        <th className="text-start p-3 text-muted-foreground">{t('date')}</th>
                         <th className="text-start p-3 text-muted-foreground"></th>
                       </tr>
                     </thead>
@@ -679,7 +557,7 @@ const OwnerDashboard = () => {
                           <td className="p-3">{new Date(tx.created_at).toLocaleDateString()}</td>
                           <td className="p-3">
                             <Badge variant={tx.commission_paid ? 'default' : 'destructive'}>
-                              {tx.commission_paid ? text.paid : text.unpaid}
+                              {tx.commission_paid ? t('paid') : t('unpaid')}
                             </Badge>
                           </td>
                         </tr>
@@ -694,10 +572,10 @@ const OwnerDashboard = () => {
           <TabsContent value="messages">
             <Card className="p-6">
               <Button variant="outline" className="mb-6" asChild>
-                <Link to="/messages">{text.viewAllMessages}</Link>
+                <Link to="/messages">{t('viewAllMessages')}</Link>
               </Button>
               {messages.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">لا توجد رسائل</p>
+                <p className="text-muted-foreground text-center py-8">{t('noMessages')}</p>
               ) : (
                 <div className="space-y-4">
                   {messages.map((msg) => (
@@ -711,7 +589,7 @@ const OwnerDashboard = () => {
                         </div>
                         <p className="text-muted-foreground mt-1">{msg.content}</p>
                         {msg.property_title && (
-                          <p className="text-xs text-primary mt-2">بخصوص: {msg.property_title}</p>
+                          <p className="text-xs text-primary mt-2">{t('regarding')}: {msg.property_title}</p>
                         )}
                       </div>
                     </div>
@@ -727,13 +605,13 @@ const OwnerDashboard = () => {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{text.confirmDelete}</AlertDialogTitle>
-            <AlertDialogDescription>{text.deleteMessage}</AlertDialogDescription>
+            <AlertDialogTitle>{t('confirmDelete')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('deleteMessage')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{text.cancel}</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              {text.delete}
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
