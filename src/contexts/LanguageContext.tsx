@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Language, getDirection, translations } from '@/lib/i18n';
+import { Language, TranslationKeys, getDirection, translations } from '@/lib/i18n';
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: keyof typeof translations['en']) => string;
+  t: (key: keyof TranslationKeys) => string;
   dir: 'rtl' | 'ltr';
 }
 
@@ -26,8 +26,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     document.documentElement.lang = language;
   }, [language]);
 
-  const t = (key: keyof typeof translations['en']): string => {
-    return translations[language][key] || translations['en'][key] || key;
+  const t = (key: keyof TranslationKeys): string => {
+    return translations[language]?.[key] || translations['en'][key] || key;
   };
 
   const dir = getDirection(language);
