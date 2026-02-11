@@ -237,9 +237,13 @@ const PromotedProperties: React.FC = () => {
                   src={videoPromotions[currentVideoIndex]?.video_url || ''}
                   className="w-full h-full object-cover"
                   controls
-                  autoPlay={isPlaying}
+                  playsInline
+                  muted
+                  autoPlay
+                  preload="metadata"
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
+                  webkit-playsinline="true"
                 />
                 {/* Video overlay info */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6">
