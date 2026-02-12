@@ -193,16 +193,30 @@ serve(async (req: Request): Promise<Response> => {
     const emailContent = getEmailTemplate(otpCode, purpose, lang);
 
     // Send email via Resend
+    // Use custom domain if verified, otherwise fallback to resend.dev
     const resend = new Resend(resendApiKey);
+    const senderEmail = "SMSAR <noreply@smsar.ma>";
+    const fallbackEmail = "SMSAR <onboarding@resend.dev>";
 
     logStep("Sending email via Resend", { to: email, subject: emailContent.subject });
 
-    const emailResponse = await resend.emails.send({
-      from: "SMSAR <onboarding@resend.dev>",
+    let emailResponse = await resend.emails.send({
+      from: senderEmail,
       to: [email],
       subject: emailContent.subject,
       html: emailContent.html,
     });
+
+    // If custom domain fails, fallback to resend.dev
+    if (emailResponse.error) {
+      logStep("Custom domain failed, trying fallback", { error: emailResponse.error });
+      emailResponse = await resend.emails.send({
+        from: fallbackEmail,
+        to: [email],
+        subject: emailContent.subject,
+        html: emailContent.html,
+      });
+    }
 
     logStep("Resend response", emailResponse);
 
