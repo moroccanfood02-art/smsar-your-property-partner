@@ -5,51 +5,16 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Building2,
-  Users,
-  Eye,
-  Trash2,
-  TrendingUp,
-  DollarSign,
-  CreditCard,
-  CheckCircle,
-  Megaphone,
-  Plus,
-  Video,
-  Image,
-  Star,
-  FileText,
-  Bell,
-  Loader2,
-  RefreshCw,
-  BarChart3,
-} from 'lucide-react';
+import { LayoutDashboard, Receipt, Megaphone, Users, Building2 } from 'lucide-react';
 import { generatePromotionsReport, generateTransactionsReport, generatePropertiesReport } from '@/utils/pdfReports';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import AdminStatsCards from '@/components/admin/AdminStatsCards';
+import AdminOverviewCharts from '@/components/admin/AdminOverviewCharts';
+import AdminUsersTab from '@/components/admin/AdminUsersTab';
+import AdminPropertiesTab from '@/components/admin/AdminPropertiesTab';
+import AdminTransactionsTab from '@/components/admin/AdminTransactionsTab';
+import AdminPromotionsTab from '@/components/admin/AdminPromotionsTab';
 
 interface Stats {
   totalProperties: number;
@@ -114,15 +79,8 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [stats, setStats] = useState<Stats>({
-    totalProperties: 0,
-    totalUsers: 0,
-    totalMessages: 0,
-    totalViews: 0,
-    totalTransactions: 0,
-    totalCommission: 0,
-    paidCommission: 0,
-    unpaidCommission: 0,
-    activePromotions: 0,
+    totalProperties: 0, totalUsers: 0, totalMessages: 0, totalViews: 0,
+    totalTransactions: 0, totalCommission: 0, paidCommission: 0, unpaidCommission: 0, activePromotions: 0,
   });
   const [users, setUsers] = useState<UserData[]>([]);
   const [properties, setProperties] = useState<PropertyData[]>([]);
@@ -136,272 +94,91 @@ const AdminDashboard = () => {
   const [checkingExpiring, setCheckingExpiring] = useState(false);
   const [autoRenewing, setAutoRenewing] = useState(false);
   const [newPromotion, setNewPromotion] = useState({
-    property_id: '',
-    promotion_type: 'featured',
-    video_url: '',
-    banner_image_url: '',
-    duration_days: 7,
-    amount_paid: 50,
+    property_id: '', promotion_type: 'featured', video_url: '', banner_image_url: '', duration_days: 7, amount_paid: 50,
   });
 
   const t = {
     ar: {
-      title: 'لوحة تحكم المدير',
-      overview: 'نظرة عامة',
-      users: 'المستخدمون',
-      properties: 'العقارات',
-      transactions: 'المعاملات',
-      promotions: 'الإعلانات',
-      totalProperties: 'إجمالي العقارات',
-      totalUsers: 'إجمالي المستخدمين',
-      totalMessages: 'إجمالي الرسائل',
-      totalViews: 'إجمالي المشاهدات',
-      totalTransactions: 'إجمالي المعاملات',
-      totalCommission: 'إجمالي العمولات',
-      paidCommission: 'العمولات المدفوعة',
-      unpaidCommission: 'العمولات المستحقة',
-      activePromotions: 'الإعلانات النشطة',
-      name: 'الاسم',
-      phone: 'الهاتف',
-      role: 'الدور',
-      date: 'التاريخ',
-      actions: 'الإجراءات',
-      city: 'المدينة',
-      price: 'السعر',
-      status: 'الحالة',
-      owner: 'المالك',
-      delete: 'حذف',
-      markPaid: 'تحديد كمدفوع',
-      customer: 'زبون',
-      ownerRole: 'مالك',
-      admin: 'مدير',
-      available: 'متاح',
-      sold: 'مباع',
-      rented: 'مؤجر',
-      noAccess: 'ليس لديك صلاحية الوصول',
-      deleteSuccess: 'تم الحذف بنجاح',
-      deleteError: 'حدث خطأ أثناء الحذف',
-      transactionType: 'نوع المعاملة',
-      amount: 'المبلغ',
-      commission: 'العمولة',
-      paid: 'مدفوع',
-      unpaid: 'غير مدفوع',
-      daily_rent: 'كراء يومي',
-      monthly_rent: 'كراء شهري',
-      permanent_rent: 'كراء دائم',
-      sale: 'بيع',
-      markedPaid: 'تم تحديد العمولة كمدفوعة',
-      addPromotion: 'إضافة إعلان',
-      selectProperty: 'اختر العقار',
-      promotionType: 'نوع الإعلان',
-      featured: 'مميز',
-      video_ad: 'إعلان فيديو',
-      banner: 'بانر',
-      homepage: 'الصفحة الرئيسية',
-      videoUrl: 'رابط الفيديو',
-      duration: 'المدة (أيام)',
-      amountPaid: 'المبلغ المدفوع',
-      create: 'إنشاء',
-      promotionCreated: 'تم إنشاء الإعلان بنجاح',
-      endDate: 'تاريخ الانتهاء',
-      active: 'نشط',
-      expired: 'منتهي',
-      deactivate: 'إلغاء التفعيل',
-      property: 'العقار',
-      bannerImage: 'صورة البانر',
-      uploadBanner: 'رفع صورة',
-      uploadVideo: 'رفع فيديو',
-      uploading: 'جاري الرفع...',
-      viewBanner: 'عرض البانر',
-      viewVideo: 'عرض الفيديو',
-      mediaRequired: 'الوسائط مطلوبة',
-      videoRequired: 'يرجى رفع فيديو للإعلان من نوع فيديو',
-      bannerRequired: 'يرجى رفع صورة للإعلان من نوع بانر',
-      downloadPDF: 'تحميل PDF',
-      promotionsReport: 'تقرير الإعلانات',
-      transactionsReport: 'تقرير المعاملات',
-      propertiesReport: 'تقرير العقارات',
-      checkExpiring: 'فحص الإعلانات المنتهية',
-      checkingExpiring: 'جاري الفحص...',
-      notificationsSent: 'تم إرسال الإشعارات',
-      autoRenew: 'التجديد التلقائي',
-      autoRenewing: 'جاري التجديد...',
-      autoRenewComplete: 'تم فحص الإعلانات المنتهية',
-      promotionStats: 'إحصائيات الإعلانات',
-      monthlyRevenue: 'الإيرادات الشهرية',
-      promotionsByType: 'الإعلانات حسب النوع',
+      title: 'لوحة تحكم المدير', overview: 'نظرة عامة', users: 'المستخدمون', properties: 'العقارات',
+      transactions: 'المعاملات', promotions: 'الإعلانات', totalProperties: 'إجمالي العقارات',
+      totalUsers: 'إجمالي المستخدمين', totalMessages: 'إجمالي الرسائل', totalViews: 'إجمالي المشاهدات',
+      totalTransactions: 'إجمالي المعاملات', totalCommission: 'إجمالي العمولات',
+      paidCommission: 'العمولات المدفوعة', unpaidCommission: 'العمولات المستحقة',
+      activePromotions: 'الإعلانات النشطة', name: 'الاسم', phone: 'الهاتف', role: 'الدور',
+      date: 'التاريخ', actions: 'الإجراءات', city: 'المدينة', price: 'السعر', status: 'الحالة',
+      owner: 'المالك', delete: 'حذف', markPaid: 'تحديد كمدفوع', customer: 'زبون', ownerRole: 'مالك',
+      admin: 'مدير', available: 'متاح', sold: 'مباع', rented: 'مؤجر', noAccess: 'ليس لديك صلاحية الوصول',
+      deleteSuccess: 'تم الحذف بنجاح', deleteError: 'حدث خطأ أثناء الحذف', transactionType: 'نوع المعاملة',
+      amount: 'المبلغ', commission: 'العمولة', paid: 'مدفوع', unpaid: 'غير مدفوع',
+      daily_rent: 'كراء يومي', monthly_rent: 'كراء شهري', permanent_rent: 'كراء دائم', sale: 'بيع',
+      markedPaid: 'تم تحديد العمولة كمدفوعة', addPromotion: 'إضافة إعلان', selectProperty: 'اختر العقار',
+      promotionType: 'نوع الإعلان', featured: 'مميز', video_ad: 'إعلان فيديو', banner: 'بانر',
+      homepage: 'الصفحة الرئيسية', videoUrl: 'رابط الفيديو', duration: 'المدة (أيام)',
+      amountPaid: 'المبلغ المدفوع', create: 'إنشاء', promotionCreated: 'تم إنشاء الإعلان بنجاح',
+      endDate: 'تاريخ الانتهاء', active: 'نشط', expired: 'منتهي', deactivate: 'إلغاء التفعيل',
+      property: 'العقار', bannerImage: 'صورة البانر', uploadBanner: 'رفع صورة', uploadVideo: 'رفع فيديو',
+      uploading: 'جاري الرفع...', viewBanner: 'عرض البانر', viewVideo: 'عرض الفيديو',
+      mediaRequired: 'الوسائط مطلوبة', videoRequired: 'يرجى رفع فيديو للإعلان من نوع فيديو',
+      bannerRequired: 'يرجى رفع صورة للإعلان من نوع بانر', downloadPDF: 'تحميل PDF',
+      checkExpiring: 'فحص المنتهية', checkingExpiring: 'جاري الفحص...', notificationsSent: 'تم إرسال الإشعارات',
+      autoRenew: 'التجديد التلقائي', autoRenewing: 'جاري التجديد...', autoRenewComplete: 'تم فحص الإعلانات المنتهية',
+      promotionsByType: 'الإعلانات حسب النوع', monthlyRevenue: 'الإيرادات الشهرية',
     },
     fr: {
-      title: 'Tableau de Bord Admin',
-      overview: 'Aperçu',
-      users: 'Utilisateurs',
-      properties: 'Propriétés',
-      transactions: 'Transactions',
-      promotions: 'Promotions',
-      totalProperties: 'Total Propriétés',
-      totalUsers: 'Total Utilisateurs',
-      totalMessages: 'Total Messages',
-      totalViews: 'Total Vues',
-      totalTransactions: 'Total Transactions',
-      totalCommission: 'Total Commissions',
-      paidCommission: 'Commissions Payées',
-      unpaidCommission: 'Commissions Dues',
-      activePromotions: 'Promotions Actives',
-      name: 'Nom',
-      phone: 'Téléphone',
-      role: 'Rôle',
-      date: 'Date',
-      actions: 'Actions',
-      city: 'Ville',
-      price: 'Prix',
-      status: 'Statut',
-      owner: 'Propriétaire',
-      delete: 'Supprimer',
-      markPaid: 'Marquer Payé',
-      customer: 'Client',
-      ownerRole: 'Propriétaire',
-      admin: 'Admin',
-      available: 'Disponible',
-      sold: 'Vendu',
-      rented: 'Loué',
-      noAccess: "Vous n'avez pas accès",
-      deleteSuccess: 'Supprimé avec succès',
-      deleteError: 'Erreur lors de la suppression',
-      transactionType: 'Type',
-      amount: 'Montant',
-      commission: 'Commission',
-      paid: 'Payé',
-      unpaid: 'Non Payé',
-      daily_rent: 'Location Journalière',
-      monthly_rent: 'Location Mensuelle',
-      permanent_rent: 'Location Permanente',
-      sale: 'Vente',
-      markedPaid: 'Commission marquée comme payée',
-      addPromotion: 'Ajouter Promotion',
-      selectProperty: 'Sélectionner Propriété',
-      promotionType: 'Type de Promotion',
-      featured: 'En Vedette',
-      video_ad: 'Pub Vidéo',
-      banner: 'Bannière',
-      homepage: 'Page Accueil',
-      videoUrl: 'URL Vidéo',
-      duration: 'Durée (jours)',
-      amountPaid: 'Montant Payé',
-      create: 'Créer',
-      promotionCreated: 'Promotion créée avec succès',
-      endDate: 'Date Fin',
-      active: 'Actif',
-      expired: 'Expiré',
-      deactivate: 'Désactiver',
-      property: 'Propriété',
-      bannerImage: 'Image Bannière',
-      uploadBanner: 'Télécharger Image',
-      uploadVideo: 'Télécharger Vidéo',
-      uploading: 'Téléchargement...',
-      viewBanner: 'Voir Bannière',
-      viewVideo: 'Voir Vidéo',
-      mediaRequired: 'Média requis',
-      videoRequired: 'Veuillez télécharger une vidéo pour ce type de promotion',
-      bannerRequired: 'Veuillez télécharger une image pour ce type de promotion',
-      downloadPDF: 'Télécharger PDF',
-      promotionsReport: 'Rapport Promotions',
-      transactionsReport: 'Rapport Transactions',
-      propertiesReport: 'Rapport Propriétés',
-      checkExpiring: 'Vérifier Expirations',
-      checkingExpiring: 'Vérification...',
-      notificationsSent: 'Notifications envoyées',
-      autoRenew: 'Renouvellement Auto',
-      autoRenewing: 'Renouvellement...',
-      autoRenewComplete: 'Promotions expirées vérifiées',
-      promotionStats: 'Statistiques Promotions',
-      monthlyRevenue: 'Revenus Mensuels',
-      promotionsByType: 'Promotions par Type',
+      title: 'Tableau de Bord Admin', overview: 'Aperçu', users: 'Utilisateurs', properties: 'Propriétés',
+      transactions: 'Transactions', promotions: 'Promotions', totalProperties: 'Total Propriétés',
+      totalUsers: 'Total Utilisateurs', totalMessages: 'Total Messages', totalViews: 'Total Vues',
+      totalTransactions: 'Total Transactions', totalCommission: 'Total Commissions',
+      paidCommission: 'Commissions Payées', unpaidCommission: 'Commissions Dues',
+      activePromotions: 'Promotions Actives', name: 'Nom', phone: 'Téléphone', role: 'Rôle',
+      date: 'Date', actions: 'Actions', city: 'Ville', price: 'Prix', status: 'Statut',
+      owner: 'Propriétaire', delete: 'Supprimer', markPaid: 'Marquer Payé', customer: 'Client',
+      ownerRole: 'Propriétaire', admin: 'Admin', available: 'Disponible', sold: 'Vendu', rented: 'Loué',
+      noAccess: "Vous n'avez pas accès", deleteSuccess: 'Supprimé avec succès',
+      deleteError: 'Erreur lors de la suppression', transactionType: 'Type', amount: 'Montant',
+      commission: 'Commission', paid: 'Payé', unpaid: 'Non Payé', daily_rent: 'Location Journalière',
+      monthly_rent: 'Location Mensuelle', permanent_rent: 'Location Permanente', sale: 'Vente',
+      markedPaid: 'Commission marquée comme payée', addPromotion: 'Ajouter Promotion',
+      selectProperty: 'Sélectionner Propriété', promotionType: 'Type de Promotion', featured: 'En Vedette',
+      video_ad: 'Pub Vidéo', banner: 'Bannière', homepage: 'Page Accueil', videoUrl: 'URL Vidéo',
+      duration: 'Durée (jours)', amountPaid: 'Montant Payé', create: 'Créer',
+      promotionCreated: 'Promotion créée avec succès', endDate: 'Date Fin', active: 'Actif', expired: 'Expiré',
+      deactivate: 'Désactiver', property: 'Propriété', bannerImage: 'Image Bannière',
+      uploadBanner: 'Télécharger Image', uploadVideo: 'Télécharger Vidéo', uploading: 'Téléchargement...',
+      viewBanner: 'Voir Bannière', viewVideo: 'Voir Vidéo', mediaRequired: 'Média requis',
+      videoRequired: 'Veuillez télécharger une vidéo', bannerRequired: 'Veuillez télécharger une image',
+      downloadPDF: 'Télécharger PDF', checkExpiring: 'Vérifier Expirations', checkingExpiring: 'Vérification...',
+      notificationsSent: 'Notifications envoyées', autoRenew: 'Renouvellement Auto',
+      autoRenewing: 'Renouvellement...', autoRenewComplete: 'Promotions vérifiées',
+      promotionsByType: 'Promotions par Type', monthlyRevenue: 'Revenus Mensuels',
     },
     en: {
-      title: 'Admin Dashboard',
-      overview: 'Overview',
-      users: 'Users',
-      properties: 'Properties',
-      transactions: 'Transactions',
-      promotions: 'Promotions',
-      totalProperties: 'Total Properties',
-      totalUsers: 'Total Users',
-      totalMessages: 'Total Messages',
-      totalViews: 'Total Views',
-      totalTransactions: 'Total Transactions',
-      totalCommission: 'Total Commission',
-      paidCommission: 'Paid Commission',
-      unpaidCommission: 'Unpaid Commission',
-      activePromotions: 'Active Promotions',
-      name: 'Name',
-      phone: 'Phone',
-      role: 'Role',
-      date: 'Date',
-      actions: 'Actions',
-      city: 'City',
-      price: 'Price',
-      status: 'Status',
-      owner: 'Owner',
-      delete: 'Delete',
-      markPaid: 'Mark Paid',
-      customer: 'Customer',
-      ownerRole: 'Owner',
-      admin: 'Admin',
-      available: 'Available',
-      sold: 'Sold',
-      rented: 'Rented',
-      noAccess: "You don't have access",
-      deleteSuccess: 'Deleted successfully',
-      deleteError: 'Error deleting',
-      transactionType: 'Type',
-      amount: 'Amount',
-      commission: 'Commission',
-      paid: 'Paid',
-      unpaid: 'Unpaid',
-      daily_rent: 'Daily Rent',
-      monthly_rent: 'Monthly Rent',
-      permanent_rent: 'Permanent Rent',
-      sale: 'Sale',
-      markedPaid: 'Commission marked as paid',
-      addPromotion: 'Add Promotion',
-      selectProperty: 'Select Property',
-      promotionType: 'Promotion Type',
-      featured: 'Featured',
-      video_ad: 'Video Ad',
-      banner: 'Banner',
-      homepage: 'Homepage',
-      videoUrl: 'Video URL',
-      duration: 'Duration (days)',
-      amountPaid: 'Amount Paid',
-      create: 'Create',
-      promotionCreated: 'Promotion created successfully',
-      endDate: 'End Date',
-      active: 'Active',
-      expired: 'Expired',
-      deactivate: 'Deactivate',
-      property: 'Property',
-      bannerImage: 'Banner Image',
-      uploadBanner: 'Upload Image',
-      uploadVideo: 'Upload Video',
-      uploading: 'Uploading...',
-      viewBanner: 'View Banner',
-      viewVideo: 'View Video',
-      mediaRequired: 'Media required',
-      videoRequired: 'Please upload a video for video ad promotion',
-      bannerRequired: 'Please upload an image for banner promotion',
-      downloadPDF: 'Download PDF',
-      promotionsReport: 'Promotions Report',
-      transactionsReport: 'Transactions Report',
-      propertiesReport: 'Properties Report',
-      checkExpiring: 'Check Expiring',
-      checkingExpiring: 'Checking...',
-      notificationsSent: 'Notifications sent',
-      autoRenew: 'Auto Renew',
-      autoRenewing: 'Renewing...',
-      autoRenewComplete: 'Expired promotions checked',
-      promotionStats: 'Promotion Stats',
+      title: 'Admin Dashboard', overview: 'Overview', users: 'Users', properties: 'Properties',
+      transactions: 'Transactions', promotions: 'Promotions', totalProperties: 'Total Properties',
+      totalUsers: 'Total Users', totalMessages: 'Total Messages', totalViews: 'Total Views',
+      totalTransactions: 'Total Transactions', totalCommission: 'Total Commission',
+      paidCommission: 'Paid Commission', unpaidCommission: 'Unpaid Commission',
+      activePromotions: 'Active Promotions', name: 'Name', phone: 'Phone', role: 'Role',
+      date: 'Date', actions: 'Actions', city: 'City', price: 'Price', status: 'Status',
+      owner: 'Owner', delete: 'Delete', markPaid: 'Mark Paid', customer: 'Customer',
+      ownerRole: 'Owner', admin: 'Admin', available: 'Available', sold: 'Sold', rented: 'Rented',
+      noAccess: "You don't have access", deleteSuccess: 'Deleted successfully',
+      deleteError: 'Error deleting', transactionType: 'Type', amount: 'Amount',
+      commission: 'Commission', paid: 'Paid', unpaid: 'Unpaid', daily_rent: 'Daily Rent',
+      monthly_rent: 'Monthly Rent', permanent_rent: 'Permanent Rent', sale: 'Sale',
+      markedPaid: 'Commission marked as paid', addPromotion: 'Add Promotion',
+      selectProperty: 'Select Property', promotionType: 'Promotion Type', featured: 'Featured',
+      video_ad: 'Video Ad', banner: 'Banner', homepage: 'Homepage', videoUrl: 'Video URL',
+      duration: 'Duration (days)', amountPaid: 'Amount Paid', create: 'Create',
+      promotionCreated: 'Promotion created', endDate: 'End Date', active: 'Active', expired: 'Expired',
+      deactivate: 'Deactivate', property: 'Property', bannerImage: 'Banner Image',
+      uploadBanner: 'Upload Image', uploadVideo: 'Upload Video', uploading: 'Uploading...',
+      viewBanner: 'View Banner', viewVideo: 'View Video', mediaRequired: 'Media required',
+      videoRequired: 'Please upload a video', bannerRequired: 'Please upload an image',
+      downloadPDF: 'Download PDF', checkExpiring: 'Check Expiring', checkingExpiring: 'Checking...',
+      notificationsSent: 'Notifications sent', autoRenew: 'Auto Renew', autoRenewing: 'Renewing...',
+      autoRenewComplete: 'Expired promotions checked', promotionsByType: 'Promotions by Type',
       monthlyRevenue: 'Monthly Revenue',
-      promotionsByType: 'Promotions by Type',
     },
   };
 
@@ -409,22 +186,16 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user) {
-        navigate('/auth');
-      } else if (role !== 'admin') {
+      if (!user) navigate('/auth');
+      else if (role !== 'admin') {
         navigate('/');
-        toast({
-          title: text.noAccess,
-          variant: 'destructive',
-        });
+        toast({ title: text.noAccess, variant: 'destructive' });
       }
     }
   }, [user, role, authLoading, navigate]);
 
   useEffect(() => {
-    if (user && role === 'admin') {
-      fetchData();
-    }
+    if (user && role === 'admin') fetchData();
   }, [user, role]);
 
   const fetchData = async () => {
@@ -436,1202 +207,241 @@ const AdminDashboard = () => {
       supabase.from('property_promotions').select('*').order('created_at', { ascending: false }),
     ]);
 
-    const totalViews = (propertiesRes.data || []).reduce(
-      (sum, p) => sum + (p.views_count || 0),
-      0
-    );
-
+    const totalViews = (propertiesRes.data || []).reduce((sum, p) => sum + (p.views_count || 0), 0);
     const transactionsData = transactionsRes.data || [];
     const totalCommission = transactionsData.reduce((sum: number, tx: any) => sum + (tx.commission_amount || 0), 0);
-    const paidCommission = transactionsData
-      .filter((tx: any) => tx.commission_paid)
-      .reduce((sum: number, tx: any) => sum + (tx.commission_amount || 0), 0);
-    const unpaidCommission = totalCommission - paidCommission;
-
-    const activePromos = (promotionsRes.data || []).filter(
-      (p: any) => p.is_active && new Date(p.end_date) > new Date()
-    ).length;
+    const paidCommission = transactionsData.filter((tx: any) => tx.commission_paid).reduce((sum: number, tx: any) => sum + (tx.commission_amount || 0), 0);
+    const activePromos = (promotionsRes.data || []).filter((p: any) => p.is_active && new Date(p.end_date) > new Date()).length;
 
     setStats({
-      totalProperties: propertiesRes.data?.length || 0,
-      totalUsers: usersRes.data?.length || 0,
-      totalMessages: messagesRes.data?.length || 0,
-      totalViews,
-      totalTransactions: transactionsData.length,
-      totalCommission,
-      paidCommission,
-      unpaidCommission,
-      activePromotions: activePromos,
+      totalProperties: propertiesRes.data?.length || 0, totalUsers: usersRes.data?.length || 0,
+      totalMessages: messagesRes.data?.length || 0, totalViews, totalTransactions: transactionsData.length,
+      totalCommission, paidCommission, unpaidCommission: totalCommission - paidCommission, activePromotions: activePromos,
     });
 
-    // Fetch users with roles
-    const { data: profilesData } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
+    // Users with roles
+    const { data: profilesData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
     const usersWithRoles: UserData[] = [];
     for (const profile of profilesData || []) {
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', profile.user_id)
-        .maybeSingle();
-
-      usersWithRoles.push({
-        ...profile,
-        role: roleData?.role || 'customer',
-      });
+      const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', profile.user_id).maybeSingle();
+      usersWithRoles.push({ ...profile, role: roleData?.role || 'customer' });
     }
     setUsers(usersWithRoles);
 
-    // Fetch properties with owner names
+    // Properties with owners
     const propertiesWithOwners: PropertyData[] = [];
     for (const property of propertiesRes.data || []) {
-      const { data: ownerProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', property.owner_id)
-        .maybeSingle();
-
-      propertiesWithOwners.push({
-        id: property.id,
-        title: property.title,
-        city: property.city,
-        price: property.price,
-        currency: property.currency,
-        status: property.status,
-        created_at: property.created_at,
-        owner_name: ownerProfile?.full_name || 'مجهول',
-        owner_id: property.owner_id,
-      });
+      const { data: ownerProfile } = await supabase.from('profiles').select('full_name').eq('user_id', property.owner_id).maybeSingle();
+      propertiesWithOwners.push({ ...property, owner_name: ownerProfile?.full_name || '—', owner_id: property.owner_id });
     }
     setProperties(propertiesWithOwners);
 
-    // Fetch transactions with owner names
+    // Transactions enriched
     const enrichedTransactions: TransactionData[] = [];
     for (const tx of transactionsData) {
-      const { data: ownerProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', tx.owner_id)
-        .maybeSingle();
-
+      const { data: ownerProfile } = await supabase.from('profiles').select('full_name').eq('user_id', tx.owner_id).maybeSingle();
       let propertyTitle = null;
       if (tx.property_id) {
-        const { data: property } = await supabase
-          .from('properties')
-          .select('title')
-          .eq('id', tx.property_id)
-          .maybeSingle();
+        const { data: property } = await supabase.from('properties').select('title').eq('id', tx.property_id).maybeSingle();
         propertyTitle = property?.title;
       }
-
-      enrichedTransactions.push({
-        id: tx.id,
-        transaction_type: tx.transaction_type,
-        transaction_amount: tx.transaction_amount,
-        commission_amount: tx.commission_amount,
-        commission_paid: tx.commission_paid,
-        created_at: tx.created_at,
-        owner_name: ownerProfile?.full_name || 'مجهول',
-        property_title: propertyTitle,
-      });
+      enrichedTransactions.push({ ...tx, owner_name: ownerProfile?.full_name || '—', property_title: propertyTitle });
     }
     setTransactions(enrichedTransactions);
 
-    // Fetch promotions with property titles
+    // Promotions enriched
     const enrichedPromotions: PromotionData[] = [];
     for (const promo of promotionsRes.data || []) {
-      const property = propertiesWithOwners.find(p => p.id === promo.property_id);
+      const property = propertiesWithOwners.find((p) => p.id === promo.property_id);
       enrichedPromotions.push({
-        id: promo.id,
-        property_id: promo.property_id,
-        property_title: property?.title || 'غير معروف',
-        promotion_type: promo.promotion_type,
-        video_url: promo.video_url,
-        banner_image_url: promo.banner_image_url,
-        start_date: promo.start_date,
-        end_date: promo.end_date,
-        amount_paid: promo.amount_paid,
+        ...promo, property_title: property?.title || '—',
         is_active: promo.is_active && new Date(promo.end_date) > new Date(),
       });
     }
     setPromotions(enrichedPromotions);
-
     setLoading(false);
   };
 
   const handleDeleteProperty = async (propertyId: string) => {
     const { error } = await supabase.from('properties').delete().eq('id', propertyId);
-
-    if (error) {
-      toast({ title: text.deleteError, variant: 'destructive' });
-    } else {
-      toast({ title: text.deleteSuccess });
-      setProperties(properties.filter((p) => p.id !== propertyId));
-      setStats((prev) => ({ ...prev, totalProperties: prev.totalProperties - 1 }));
-    }
+    if (error) toast({ title: text.deleteError, variant: 'destructive' });
+    else { toast({ title: text.deleteSuccess }); setProperties((prev) => prev.filter((p) => p.id !== propertyId)); }
   };
 
   const handleMarkPaid = async (transactionId: string) => {
-    const { error } = await supabase
-      .from('transactions')
-      .update({ commission_paid: true, paid_at: new Date().toISOString() })
-      .eq('id', transactionId);
-
-    if (!error) {
-      toast({ title: text.markedPaid });
-      fetchData();
-    }
+    const { error } = await supabase.from('transactions').update({ commission_paid: true, paid_at: new Date().toISOString() }).eq('id', transactionId);
+    if (!error) { toast({ title: text.markedPaid }); fetchData(); }
   };
 
   const handleCreatePromotion = async () => {
-    const property = properties.find(p => p.id === newPromotion.property_id);
+    const property = properties.find((p) => p.id === newPromotion.property_id);
     if (!property) return;
-
-    // Validate media requirements based on promotion type
     if (newPromotion.promotion_type === 'video_ad' && !videoFile && !newPromotion.video_url) {
-      toast({ 
-        title: text.mediaRequired, 
-        description: text.videoRequired,
-        variant: 'destructive' 
-      });
-      return;
+      toast({ title: text.mediaRequired, description: text.videoRequired, variant: 'destructive' }); return;
     }
-
     if (newPromotion.promotion_type === 'banner' && !bannerFile && !newPromotion.banner_image_url) {
-      toast({ 
-        title: text.mediaRequired, 
-        description: text.bannerRequired,
-        variant: 'destructive' 
-      });
-      return;
+      toast({ title: text.mediaRequired, description: text.bannerRequired, variant: 'destructive' }); return;
     }
-
     setUploadingMedia(true);
     let videoUrl = newPromotion.video_url || null;
     let bannerUrl = newPromotion.banner_image_url || null;
-
     try {
-      // Upload banner image if provided
       if (bannerFile) {
-        const fileExt = bannerFile.name.split('.').pop();
-        const fileName = `${newPromotion.property_id}-banner-${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('promotion-media')
-          .upload(fileName, bannerFile);
-        
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('promotion-media')
-            .getPublicUrl(fileName);
-          bannerUrl = publicUrl;
-        }
+        const fileName = `${newPromotion.property_id}-banner-${Date.now()}.${bannerFile.name.split('.').pop()}`;
+        const { error: uploadError } = await supabase.storage.from('promotion-media').upload(fileName, bannerFile);
+        if (!uploadError) bannerUrl = supabase.storage.from('promotion-media').getPublicUrl(fileName).data.publicUrl;
       }
-
-      // Upload video file if provided
       if (videoFile) {
-        const fileExt = videoFile.name.split('.').pop();
-        const fileName = `${newPromotion.property_id}-video-${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('promotion-media')
-          .upload(fileName, videoFile);
-        
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('promotion-media')
-            .getPublicUrl(fileName);
-          videoUrl = publicUrl;
-        }
+        const fileName = `${newPromotion.property_id}-video-${Date.now()}.${videoFile.name.split('.').pop()}`;
+        const { error: uploadError } = await supabase.storage.from('promotion-media').upload(fileName, videoFile);
+        if (!uploadError) videoUrl = supabase.storage.from('promotion-media').getPublicUrl(fileName).data.publicUrl;
       }
-
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + newPromotion.duration_days);
-
+      const endDate = new Date(); endDate.setDate(endDate.getDate() + newPromotion.duration_days);
       const { error } = await supabase.from('property_promotions').insert({
-        property_id: newPromotion.property_id,
-        owner_id: property.owner_id,
-        promotion_type: newPromotion.promotion_type,
-        video_url: videoUrl,
-        banner_image_url: bannerUrl,
-        end_date: endDate.toISOString(),
-        amount_paid: newPromotion.amount_paid,
-        is_active: true,
+        property_id: newPromotion.property_id, owner_id: property.owner_id, promotion_type: newPromotion.promotion_type,
+        video_url: videoUrl, banner_image_url: bannerUrl, end_date: endDate.toISOString(), amount_paid: newPromotion.amount_paid, is_active: true,
       });
-
       if (!error) {
-        toast({ title: text.promotionCreated });
-        setShowPromotionDialog(false);
-        setNewPromotion({
-          property_id: '',
-          promotion_type: 'featured',
-          video_url: '',
-          banner_image_url: '',
-          duration_days: 7,
-          amount_paid: 50,
-        });
-        setBannerFile(null);
-        setVideoFile(null);
-
-        // Send notification to owner
+        toast({ title: text.promotionCreated }); setShowPromotionDialog(false);
+        setNewPromotion({ property_id: '', promotion_type: 'featured', video_url: '', banner_image_url: '', duration_days: 7, amount_paid: 50 });
+        setBannerFile(null); setVideoFile(null);
         await supabase.from('notifications').insert({
-          user_id: property.owner_id,
-          title: 'إعلان جديد لعقارك',
+          user_id: property.owner_id, title: 'إعلان جديد لعقارك',
           message: `تم تفعيل إعلان لعقارك "${property.title}" لمدة ${newPromotion.duration_days} أيام`,
-          type: 'promotion',
-          link: '/owner-dashboard',
+          type: 'promotion', link: '/owner-dashboard',
         });
-
         fetchData();
       }
-    } catch (error) {
-      console.error('Error creating promotion:', error);
-    } finally {
-      setUploadingMedia(false);
-    }
+    } catch (error) { console.error('Error:', error); }
+    finally { setUploadingMedia(false); }
   };
 
   const handleDeactivatePromotion = async (promotionId: string) => {
-    const { error } = await supabase
-      .from('property_promotions')
-      .update({ is_active: false })
-      .eq('id', promotionId);
-
-    if (!error) {
-      fetchData();
-    }
+    const { error } = await supabase.from('property_promotions').update({ is_active: false }).eq('id', promotionId);
+    if (!error) fetchData();
   };
 
   const handleCheckExpiringPromotions = async () => {
     setCheckingExpiring(true);
     try {
       const { data, error } = await supabase.functions.invoke('check-expiring-promotions');
-      
-      if (error) {
-        toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      } else {
-        toast({ 
-          title: text.notificationsSent, 
-          description: `${data.notificationsSent} ${language === 'ar' ? 'إشعارات' : 'notifications'}` 
-        });
-      }
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
-    } finally {
-      setCheckingExpiring(false);
-    }
+      if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      else toast({ title: text.notificationsSent, description: `${data.notificationsSent}` });
+    } catch (err: any) { toast({ title: 'Error', description: err.message, variant: 'destructive' }); }
+    finally { setCheckingExpiring(false); }
   };
 
   const handleAutoRenewPromotions = async () => {
     setAutoRenewing(true);
     try {
       const { data, error } = await supabase.functions.invoke('auto-renew-promotions');
-      
-      if (error) {
-        toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      } else {
-        toast({ 
-          title: text.autoRenewComplete, 
-          description: `${data.notificationsCount || 0} ${language === 'ar' ? 'إشعارات تجديد' : 'renewal notifications'}` 
-        });
-        fetchData();
-      }
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
-    } finally {
-      setAutoRenewing(false);
-    }
+      if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      else { toast({ title: text.autoRenewComplete }); fetchData(); }
+    } catch (err: any) { toast({ title: 'Error', description: err.message, variant: 'destructive' }); }
+    finally { setAutoRenewing(false); }
   };
 
-  // Calculate chart data
-  const getPromotionChartData = () => {
-    const typeData = [
-      { name: text.featured, value: promotions.filter(p => p.promotion_type === 'featured').length, color: '#F59E0B' },
-      { name: text.video_ad, value: promotions.filter(p => p.promotion_type === 'video_ad').length, color: '#8B5CF6' },
-      { name: text.banner, value: promotions.filter(p => p.promotion_type === 'banner').length, color: '#3B82F6' },
-      { name: text.homepage, value: promotions.filter(p => p.promotion_type === 'homepage').length, color: '#EC4899' },
-    ].filter(d => d.value > 0);
-    return typeData;
-  };
+  const formatPrice = (price: number, currency: string = 'USD') =>
+    new Intl.NumberFormat(language === 'ar' ? 'ar-MA' : 'fr-MA').format(price) + ' ' + currency;
 
-  const getMonthlyRevenueData = () => {
-    const monthlyData: Record<string, number> = {};
-    const now = new Date();
-    
-    // Last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = date.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { month: 'short' });
-      monthlyData[monthKey] = 0;
-    }
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString(language === 'ar' ? 'ar-MA' : 'fr-MA');
 
-    promotions.forEach(p => {
-      const promoDate = new Date(p.start_date);
-      const monthKey = promoDate.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { month: 'short' });
-      if (monthlyData[monthKey] !== undefined) {
-        monthlyData[monthKey] += p.amount_paid;
-      }
-    });
-
-    return Object.entries(monthlyData).map(([name, revenue]) => ({ name, revenue }));
-  };
-
-  const getStatusData = () => {
-    return [
-      { name: language === 'ar' ? 'نشط' : 'Active', value: promotions.filter(p => p.is_active).length, color: '#22C55E' },
-      { name: language === 'ar' ? 'منتهي' : 'Expired', value: promotions.filter(p => !p.is_active).length, color: '#EF4444' },
-    ].filter(d => d.value > 0);
-  };
-
-  const handleExportPromotionsPDF = () => {
-    generatePromotionsReport(promotions, language);
-  };
-
-  const handleExportTransactionsPDF = () => {
-    generateTransactionsReport(transactions, language);
-  };
-
-  const handleExportPropertiesPDF = () => {
-    generatePropertiesReport(properties, language);
-  };
-
-  const formatPrice = (price: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat(language === 'ar' ? 'ar-MA' : 'fr-MA').format(price) + ' ' + currency;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(
-      language === 'ar' ? 'ar-MA' : 'fr-MA'
-    );
-  };
-
-  const getRoleLabel = (userRole: string) => {
-    const labels: Record<string, string> = {
-      customer: text.customer,
-      owner: text.ownerRole,
-      admin: text.admin,
-    };
-    return labels[userRole] || userRole;
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      available: text.available,
-      sold: text.sold,
-      rented: text.rented,
-    };
-    return labels[status] || status;
-  };
-
-  const getTransactionTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      daily_rent: text.daily_rent,
-      monthly_rent: text.monthly_rent,
-      permanent_rent: text.permanent_rent,
-      sale: text.sale,
-    };
-    return labels[type] || type;
-  };
-
-  const getPromotionTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      featured: text.featured,
-      video_ad: text.video_ad,
-      banner: text.banner,
-      homepage: text.homepage,
-    };
-    return labels[type] || type;
-  };
-
-  const getPromotionIcon = (type: string) => {
-    switch (type) {
-      case 'video_ad':
-        return <Video className="h-4 w-4" />;
-      case 'banner':
-        return <Image className="h-4 w-4" />;
-      case 'homepage':
-        return <Star className="h-4 w-4" />;
-      default:
-        return <Megaphone className="h-4 w-4" />;
-    }
-  };
+  const getRoleLabel = (userRole: string) => ({ customer: text.customer, owner: text.ownerRole, admin: text.admin }[userRole] || userRole);
+  const getStatusLabel = (status: string) => ({ available: text.available, sold: text.sold, rented: text.rented }[status] || status);
+  const getTransactionTypeLabel = (type: string) => ({ daily_rent: text.daily_rent, monthly_rent: text.monthly_rent, permanent_rent: text.permanent_rent, sale: text.sale }[type] || type);
+  const getPromotionTypeLabel = (type: string) => ({ featured: text.featured, video_ad: text.video_ad, banner: text.banner, homepage: text.homepage }[type] || type);
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">{language === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
+        </div>
       </div>
     );
   }
 
-  if (role !== 'admin') {
-    return null;
-  }
+  if (role !== 'admin') return null;
 
   return (
     <div className="min-h-screen bg-background" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <Navbar />
       <main className="container mx-auto px-4 py-8 mt-20">
-        <h1 className="text-3xl font-bold text-foreground mb-8">{text.title}</h1>
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">{text.title}</h1>
+          <p className="text-muted-foreground mt-1">
+            {language === 'ar' ? 'إدارة شاملة للمنصة والعقارات والمستخدمين' : 'Comprehensive platform management'}
+          </p>
+        </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">{text.overview}</TabsTrigger>
-            <TabsTrigger value="transactions">{text.transactions}</TabsTrigger>
-            <TabsTrigger value="promotions">{text.promotions}</TabsTrigger>
-            <TabsTrigger value="users">{text.users}</TabsTrigger>
-            <TabsTrigger value="properties">{text.properties}</TabsTrigger>
+          <TabsList className="bg-muted/60 p-1 h-auto flex-wrap">
+            <TabsTrigger value="overview" className="gap-2 data-[state=active]:shadow-sm">
+              <LayoutDashboard className="h-4 w-4" /> {text.overview}
+            </TabsTrigger>
+            <TabsTrigger value="transactions" className="gap-2 data-[state=active]:shadow-sm">
+              <Receipt className="h-4 w-4" /> {text.transactions}
+            </TabsTrigger>
+            <TabsTrigger value="promotions" className="gap-2 data-[state=active]:shadow-sm">
+              <Megaphone className="h-4 w-4" /> {text.promotions}
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-2 data-[state=active]:shadow-sm">
+              <Users className="h-4 w-4" /> {text.users}
+            </TabsTrigger>
+            <TabsTrigger value="properties" className="gap-2 data-[state=active]:shadow-sm">
+              <Building2 className="h-4 w-4" /> {text.properties}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {text.totalProperties}
-                  </CardTitle>
-                  <Building2 className="h-5 w-5 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-foreground">{stats.totalProperties}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {text.totalUsers}
-                  </CardTitle>
-                  <Users className="h-5 w-5 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-foreground">{stats.totalUsers}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {text.totalTransactions}
-                  </CardTitle>
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-foreground">{stats.totalTransactions}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {text.activePromotions}
-                  </CardTitle>
-                  <Megaphone className="h-5 w-5 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-foreground">{stats.activePromotions}</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {text.totalViews}
-                  </CardTitle>
-                  <Eye className="h-5 w-5 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-foreground">{stats.totalViews}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {text.totalCommission}
-                  </CardTitle>
-                  <DollarSign className="h-5 w-5 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-foreground">{formatPrice(stats.totalCommission)}</div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-green-500">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {text.paidCommission}
-                  </CardTitle>
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-500">{formatPrice(stats.paidCommission)}</div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-destructive">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {text.unpaidCommission}
-                  </CardTitle>
-                  <CreditCard className="h-5 w-5 text-destructive" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-destructive">{formatPrice(stats.unpaidCommission)}</div>
-                </CardContent>
-              </Card>
-            </div>
+            <AdminStatsCards stats={stats} text={text} formatPrice={formatPrice} />
+            <AdminOverviewCharts
+              promotions={promotions}
+              transactions={transactions}
+              properties={properties}
+              text={text}
+              language={language}
+              formatPrice={formatPrice}
+            />
           </TabsContent>
 
           <TabsContent value="transactions">
-            <div className="flex justify-end mb-4">
-              <Button variant="outline" onClick={handleExportTransactionsPDF}>
-                <FileText className="h-4 w-4 me-2" />
-                {text.downloadPDF}
-              </Button>
-            </div>
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{text.owner}</TableHead>
-                      <TableHead>{text.transactionType}</TableHead>
-                      <TableHead>{text.amount}</TableHead>
-                      <TableHead>{text.commission}</TableHead>
-                      <TableHead>{text.status}</TableHead>
-                      <TableHead>{text.date}</TableHead>
-                      <TableHead>{text.actions}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.map((tx) => (
-                      <TableRow key={tx.id}>
-                        <TableCell>
-                          <span className="font-medium">{tx.owner_name}</span>
-                          {tx.property_title && (
-                            <p className="text-xs text-muted-foreground">{tx.property_title}</p>
-                          )}
-                        </TableCell>
-                        <TableCell>{getTransactionTypeLabel(tx.transaction_type)}</TableCell>
-                        <TableCell>{formatPrice(tx.transaction_amount)}</TableCell>
-                        <TableCell className="text-primary font-bold">{formatPrice(tx.commission_amount)}</TableCell>
-                        <TableCell>
-                          <Badge variant={tx.commission_paid ? 'default' : 'destructive'}>
-                            {tx.commission_paid ? text.paid : text.unpaid}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(tx.created_at)}</TableCell>
-                        <TableCell>
-                          {!tx.commission_paid && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleMarkPaid(tx.id)}
-                            >
-                              <CheckCircle className="h-4 w-4 me-1" />
-                              {text.markPaid}
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <AdminTransactionsTab
+              transactions={transactions} text={text} formatPrice={formatPrice}
+              formatDate={formatDate} getTransactionTypeLabel={getTransactionTypeLabel}
+              onMarkPaid={handleMarkPaid} onExportPDF={() => generateTransactionsReport(transactions, language)}
+            />
           </TabsContent>
 
           <TabsContent value="promotions">
-            {/* Promotion Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Star className="h-4 w-4 text-amber-500" />
-                    {text.featured}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-amber-600">
-                    {promotions.filter(p => p.promotion_type === 'featured' && p.is_active).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {language === 'ar' ? 'إعلان نشط' : 'active ads'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Video className="h-4 w-4 text-purple-500" />
-                    {text.video_ad}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">
-                    {promotions.filter(p => p.promotion_type === 'video_ad' && p.is_active).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {language === 'ar' ? 'إعلان نشط' : 'active ads'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Image className="h-4 w-4 text-blue-500" />
-                    {text.banner}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {promotions.filter(p => p.promotion_type === 'banner' && p.is_active).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {language === 'ar' ? 'إعلان نشط' : 'active ads'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-green-500" />
-                    {language === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    {formatPrice(promotions.reduce((sum, p) => sum + p.amount_paid, 0))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {language === 'ar' ? `من ${promotions.length} إعلان` : `from ${promotions.length} ads`}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Pie Chart - Promotion by Type */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    {text.promotionsByType}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={getPromotionChartData()}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}`}
-                      >
-                        {getPromotionChartData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Bar Chart - Monthly Revenue */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    {text.monthlyRevenue}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={getMonthlyRevenueData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => [`$${value}`, language === 'ar' ? 'الإيرادات' : 'Revenue']} />
-                      <Bar dataKey="revenue" fill="#F59E0B" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Promotion Type Distribution Chart */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    {language === 'ar' ? 'توزيع الإعلانات حسب النوع' : 'Ads Distribution by Type'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      { type: 'featured', label: text.featured, color: 'bg-amber-500', icon: Star },
-                      { type: 'video_ad', label: text.video_ad, color: 'bg-purple-500', icon: Video },
-                      { type: 'banner', label: text.banner, color: 'bg-blue-500', icon: Image },
-                      { type: 'homepage', label: text.homepage, color: 'bg-pink-500', icon: Megaphone },
-                    ].map(({ type, label, color, icon: Icon }) => {
-                      const count = promotions.filter(p => p.promotion_type === type).length;
-                      const percentage = promotions.length > 0 ? (count / promotions.length) * 100 : 0;
-                      const revenue = promotions.filter(p => p.promotion_type === type).reduce((sum, p) => sum + p.amount_paid, 0);
-                      
-                      return (
-                        <div key={type} className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <Icon className="h-4 w-4" />
-                              <span className="font-medium">{label}</span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="text-muted-foreground">{count} {language === 'ar' ? 'إعلان' : 'ads'}</span>
-                              <span className="font-bold">{formatPrice(revenue)}</span>
-                            </div>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${color} transition-all duration-500`}
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    {language === 'ar' ? 'ملخص سريع' : 'Quick Summary'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <span className="text-sm">{language === 'ar' ? 'إعلانات نشطة' : 'Active Ads'}</span>
-                    <span className="font-bold text-green-600">{promotions.filter(p => p.is_active).length}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                    <span className="text-sm">{language === 'ar' ? 'إعلانات منتهية' : 'Expired Ads'}</span>
-                    <span className="font-bold text-red-600">{promotions.filter(p => !p.is_active).length}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <span className="text-sm">{language === 'ar' ? 'متوسط سعر الإعلان' : 'Avg. Ad Price'}</span>
-                    <span className="font-bold text-blue-600">
-                      {promotions.length > 0 
-                        ? formatPrice(promotions.reduce((sum, p) => sum + p.amount_paid, 0) / promotions.length)
-                        : formatPrice(0)
-                      }
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <span className="text-sm">{language === 'ar' ? 'إعلانات بفيديو' : 'With Video'}</span>
-                    <span className="font-bold text-purple-600">{promotions.filter(p => p.video_url).length}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                    <span className="text-sm">{language === 'ar' ? 'إعلانات ببانر' : 'With Banner'}</span>
-                    <span className="font-bold text-amber-600">{promotions.filter(p => p.banner_image_url).length}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-              <div className="flex gap-2 flex-wrap">
-                <Button variant="outline" onClick={handleExportPromotionsPDF}>
-                  <FileText className="h-4 w-4 me-2" />
-                  {text.downloadPDF}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleCheckExpiringPromotions}
-                  disabled={checkingExpiring}
-                >
-                  <Bell className="h-4 w-4 me-2" />
-                  {checkingExpiring ? text.checkingExpiring : text.checkExpiring}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleAutoRenewPromotions}
-                  disabled={autoRenewing}
-                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  <RefreshCw className={`h-4 w-4 me-2 ${autoRenewing ? 'animate-spin' : ''}`} />
-                  {autoRenewing ? text.autoRenewing : text.autoRenew}
-                </Button>
-              </div>
-              <Dialog open={showPromotionDialog} onOpenChange={setShowPromotionDialog}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 me-2" />
-                    {text.addPromotion}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{text.addPromotion}</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto">
-                    {/* Step 1: Select Property */}
-                    <div className="p-3 bg-muted/50 rounded-lg">
-                      <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs">1</span>
-                        {text.selectProperty}
-                      </Label>
-                      <Select
-                        value={newPromotion.property_id}
-                        onValueChange={(value) => setNewPromotion({ ...newPromotion, property_id: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={text.selectProperty} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {properties.map((property) => (
-                            <SelectItem key={property.id} value={property.id}>
-                              {property.title} - {property.city}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Step 2: Select Promotion Type */}
-                    <div className="p-3 bg-muted/50 rounded-lg">
-                      <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs">2</span>
-                        {text.promotionType}
-                      </Label>
-                      <Select
-                        value={newPromotion.promotion_type}
-                        onValueChange={(value) => {
-                          setNewPromotion({ ...newPromotion, promotion_type: value });
-                          // Reset files when changing type
-                          setVideoFile(null);
-                          setBannerFile(null);
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="featured">
-                            <span className="flex items-center gap-2">
-                              <Star className="h-4 w-4" />
-                              {text.featured}
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="video_ad">
-                            <span className="flex items-center gap-2">
-                              <Video className="h-4 w-4" />
-                              {text.video_ad}
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="banner">
-                            <span className="flex items-center gap-2">
-                              <Image className="h-4 w-4" />
-                              {text.banner}
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="homepage">
-                            <span className="flex items-center gap-2">
-                              <Megaphone className="h-4 w-4" />
-                              {text.homepage}
-                            </span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Step 3: Upload Media (shown based on type) */}
-                    {(newPromotion.promotion_type === 'video_ad' || newPromotion.promotion_type === 'homepage') && (
-                      <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-2 border-dashed border-purple-300 dark:border-purple-700">
-                        <Label className="text-sm font-semibold flex items-center gap-2 mb-2 text-purple-700 dark:text-purple-300">
-                          <span className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs">3</span>
-                          <Video className="h-4 w-4" />
-                          {text.uploadVideo} *
-                        </Label>
-                        <Input
-                          type="file"
-                          accept="video/*"
-                          onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                          className="cursor-pointer bg-background"
-                        />
-                        {videoFile && (
-                          <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
-                            <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4" />
-                              {videoFile.name}
-                            </p>
-                            <video 
-                              src={URL.createObjectURL(videoFile)} 
-                              className="mt-2 max-h-32 rounded-lg"
-                              controls
-                            />
-                          </div>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {language === 'ar' ? 'أو أدخل رابط الفيديو:' : 'Or enter video URL:'}
-                        </p>
-                        <Input
-                          value={newPromotion.video_url}
-                          onChange={(e) => setNewPromotion({ ...newPromotion, video_url: e.target.value })}
-                          placeholder="https://youtube.com/..."
-                          className="mt-2"
-                        />
-                      </div>
-                    )}
-
-                    {(newPromotion.promotion_type === 'banner' || newPromotion.promotion_type === 'homepage') && (
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-dashed border-blue-300 dark:border-blue-700">
-                        <Label className="text-sm font-semibold flex items-center gap-2 mb-2 text-blue-700 dark:text-blue-300">
-                          <span className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">
-                            {newPromotion.promotion_type === 'homepage' ? '4' : '3'}
-                          </span>
-                          <Image className="h-4 w-4" />
-                          {text.bannerImage} *
-                        </Label>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
-                          className="cursor-pointer bg-background"
-                        />
-                        {bannerFile && (
-                          <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
-                            <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4" />
-                              {bannerFile.name}
-                            </p>
-                            <img 
-                              src={URL.createObjectURL(bannerFile)} 
-                              alt="Preview" 
-                              className="mt-2 max-h-32 rounded-lg object-cover"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Step 4: Duration and Amount */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>{text.duration}</Label>
-                        <Input
-                          type="number"
-                          value={newPromotion.duration_days}
-                          onChange={(e) => setNewPromotion({ ...newPromotion, duration_days: parseInt(e.target.value) })}
-                          min={1}
-                        />
-                      </div>
-
-                      <div>
-                        <Label>{text.amountPaid} ($)</Label>
-                        <Input
-                          type="number"
-                          value={newPromotion.amount_paid}
-                          onChange={(e) => setNewPromotion({ ...newPromotion, amount_paid: parseFloat(e.target.value) })}
-                          min={0}
-                        />
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={handleCreatePromotion}
-                      disabled={!newPromotion.property_id || uploadingMedia}
-                      className="w-full"
-                    >
-                      {uploadingMedia ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin me-2" />
-                          {text.uploading}
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="h-4 w-4 me-2" />
-                          {text.create}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{text.property}</TableHead>
-                      <TableHead>{text.promotionType}</TableHead>
-                      <TableHead>Media</TableHead>
-                      <TableHead>{text.amountPaid}</TableHead>
-                      <TableHead>{text.endDate}</TableHead>
-                      <TableHead>{text.status}</TableHead>
-                      <TableHead>{text.actions}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {promotions.map((promo) => (
-                      <TableRow key={promo.id}>
-                        <TableCell className="font-medium">{promo.property_title}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getPromotionIcon(promo.promotion_type)}
-                            {getPromotionTypeLabel(promo.promotion_type)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {promo.banner_image_url && (
-                              <a
-                                href={promo.banner_image_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-blue-500 hover:underline flex items-center gap-1"
-                              >
-                                <Image className="h-3 w-3" />
-                                {text.viewBanner}
-                              </a>
-                            )}
-                            {promo.video_url && (
-                              <a
-                                href={promo.video_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-purple-500 hover:underline flex items-center gap-1"
-                              >
-                                <Video className="h-3 w-3" />
-                                {text.viewVideo}
-                              </a>
-                            )}
-                            {!promo.banner_image_url && !promo.video_url && (
-                              <span className="text-xs text-muted-foreground">-</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatPrice(promo.amount_paid)}</TableCell>
-                        <TableCell>{formatDate(promo.end_date)}</TableCell>
-                        <TableCell>
-                          <Badge variant={promo.is_active ? 'default' : 'secondary'}>
-                            {promo.is_active ? text.active : text.expired}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {promo.is_active && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeactivatePromotion(promo.id)}
-                            >
-                              {text.deactivate}
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <AdminPromotionsTab
+              promotions={promotions} properties={properties} text={text} language={language}
+              formatPrice={formatPrice} formatDate={formatDate}
+              showPromotionDialog={showPromotionDialog} setShowPromotionDialog={setShowPromotionDialog}
+              newPromotion={newPromotion} setNewPromotion={setNewPromotion}
+              bannerFile={bannerFile} setBannerFile={setBannerFile}
+              videoFile={videoFile} setVideoFile={setVideoFile}
+              uploadingMedia={uploadingMedia} checkingExpiring={checkingExpiring} autoRenewing={autoRenewing}
+              onCreatePromotion={handleCreatePromotion} onDeactivate={handleDeactivatePromotion}
+              onCheckExpiring={handleCheckExpiringPromotions} onAutoRenew={handleAutoRenewPromotions}
+              onExportPDF={() => generatePromotionsReport(promotions, language)}
+              getPromotionTypeLabel={getPromotionTypeLabel}
+            />
           </TabsContent>
 
           <TabsContent value="users">
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{text.name}</TableHead>
-                      <TableHead>{text.phone}</TableHead>
-                      <TableHead>{text.role}</TableHead>
-                      <TableHead>{text.date}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((userData) => (
-                      <TableRow key={userData.id}>
-                        <TableCell className="font-medium">{userData.full_name}</TableCell>
-                        <TableCell>{userData.phone || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{getRoleLabel(userData.role)}</Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(userData.created_at)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <AdminUsersTab users={users} text={text} formatDate={formatDate} getRoleLabel={getRoleLabel} />
           </TabsContent>
 
           <TabsContent value="properties">
-            <div className="flex justify-end mb-4">
-              <Button variant="outline" onClick={handleExportPropertiesPDF}>
-                <FileText className="h-4 w-4 me-2" />
-                {text.downloadPDF}
-              </Button>
-            </div>
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{text.name}</TableHead>
-                      <TableHead>{text.city}</TableHead>
-                      <TableHead>{text.price}</TableHead>
-                      <TableHead>{text.status}</TableHead>
-                      <TableHead>{text.owner}</TableHead>
-                      <TableHead>{text.date}</TableHead>
-                      <TableHead>{text.actions}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {properties.map((property) => (
-                      <TableRow key={property.id}>
-                        <TableCell className="font-medium">{property.title}</TableCell>
-                        <TableCell>{property.city}</TableCell>
-                        <TableCell>{formatPrice(property.price, property.currency)}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{getStatusLabel(property.status)}</Badge>
-                        </TableCell>
-                        <TableCell>{property.owner_name}</TableCell>
-                        <TableCell>{formatDate(property.created_at)}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteProperty(property.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <AdminPropertiesTab
+              properties={properties} text={text} formatPrice={formatPrice}
+              formatDate={formatDate} getStatusLabel={getStatusLabel}
+              onDelete={handleDeleteProperty} onExportPDF={() => generatePropertiesReport(properties, language)}
+            />
           </TabsContent>
         </Tabs>
       </main>
