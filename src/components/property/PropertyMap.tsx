@@ -63,56 +63,37 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Map Placeholder */}
+        {/* Interactive Map */}
         <div className="relative aspect-video rounded-lg overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
           {latitude && longitude ? (
             <>
-              {/* Simple visual map representation */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative w-full h-full">
-                  {/* Grid pattern */}
-                  <div className="absolute inset-0 opacity-20">
-                    <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" />
-                        </pattern>
-                      </defs>
-                      <rect width="100%" height="100%" fill="url(#grid)" />
-                    </svg>
-                  </div>
-                  
-                  {/* Center marker */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative">
-                      <div className="absolute -inset-8 rounded-full bg-amber-500/20 animate-ping" />
-                      <div className="absolute -inset-4 rounded-full bg-amber-500/30" />
-                      <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center shadow-lg">
-                        <MapPin className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Coordinates display */}
-                  <div className="absolute bottom-3 start-3 bg-background/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs">
-                    <span className="text-muted-foreground">
-                      {latitude.toFixed(4)}, {longitude.toFixed(4)}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <iframe
+                title="Property Location"
+                width="100%"
+                height="100%"
+                className="absolute inset-0 border-0"
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.01},${latitude - 0.007},${longitude + 0.01},${latitude + 0.007}&layer=mapnik&marker=${latitude},${longitude}`}
+                allowFullScreen
+              />
 
               {/* Open in Maps button */}
               <Button
                 asChild
                 size="sm"
-                className="absolute top-3 end-3 bg-background/90 backdrop-blur-sm hover:bg-background text-foreground"
+                className="absolute top-3 end-3 bg-background/90 backdrop-blur-sm hover:bg-background text-foreground shadow-md"
               >
                 <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-4 h-4 me-2" />
                   {txt.openInMaps}
                 </a>
               </Button>
+
+              {/* Coordinates */}
+              <div className="absolute bottom-3 start-3 bg-background/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs shadow-md">
+                <span className="text-muted-foreground">
+                  {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                </span>
+              </div>
             </>
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center">
