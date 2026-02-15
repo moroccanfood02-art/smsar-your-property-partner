@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutDashboard, Receipt, Megaphone, Users, Building2 } from 'lucide-react';
+import { LayoutDashboard, Receipt, Megaphone, Users, Building2, Settings } from 'lucide-react';
 import { generatePromotionsReport, generateTransactionsReport, generatePropertiesReport } from '@/utils/pdfReports';
 import AdminStatsCards from '@/components/admin/AdminStatsCards';
 import AdminOverviewCharts from '@/components/admin/AdminOverviewCharts';
@@ -15,6 +15,7 @@ import AdminUsersTab from '@/components/admin/AdminUsersTab';
 import AdminPropertiesTab from '@/components/admin/AdminPropertiesTab';
 import AdminTransactionsTab from '@/components/admin/AdminTransactionsTab';
 import AdminPromotionsTab from '@/components/admin/AdminPromotionsTab';
+import AdminSettingsTab from '@/components/admin/AdminSettingsTab';
 
 interface Stats {
   totalProperties: number;
@@ -394,6 +395,9 @@ const AdminDashboard = () => {
             <TabsTrigger value="properties" className="gap-2 data-[state=active]:shadow-sm">
               <Building2 className="h-4 w-4" /> {text.properties}
             </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2 data-[state=active]:shadow-sm">
+              <Settings className="h-4 w-4" /> {language === 'ar' ? 'الإعدادات' : language === 'fr' ? 'Paramètres' : 'Settings'}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -442,6 +446,10 @@ const AdminDashboard = () => {
               formatDate={formatDate} getStatusLabel={getStatusLabel}
               onDelete={handleDeleteProperty} onExportPDF={() => generatePropertiesReport(properties, language)}
             />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <AdminSettingsTab language={language} />
           </TabsContent>
         </Tabs>
       </main>

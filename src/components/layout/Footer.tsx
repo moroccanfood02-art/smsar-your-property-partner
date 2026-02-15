@@ -2,9 +2,26 @@ import React, { forwardRef } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 const Footer = forwardRef<HTMLElement>((_, ref) => {
-  const { t, dir } = useLanguage();
+  const { t, dir, language } = useLanguage();
+  const { settings } = useSiteSettings();
+
+  const cityText = language === 'ar' ? settings.company_city
+    : language === 'fr' ? settings.company_city_fr
+    : settings.company_city_en;
+
+  const descText = language === 'ar' ? settings.company_description_ar
+    : language === 'fr' ? settings.company_description_fr
+    : settings.company_description_en;
+
+  const socialLinks = [
+    { url: settings.facebook_url, icon: Facebook },
+    { url: settings.twitter_url, icon: Twitter },
+    { url: settings.instagram_url, icon: Instagram },
+    { url: settings.linkedin_url, icon: Linkedin },
+  ];
 
   return (
     <footer ref={ref} className="bg-navy text-primary-foreground">
@@ -16,38 +33,21 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
               <div className="w-10 h-10 bg-gradient-gold rounded-lg flex items-center justify-center shadow-gold">
                 <span className="text-navy-dark font-bold text-xl font-cairo">س</span>
               </div>
-              <span className="text-xl font-bold font-cairo">SMSAR</span>
+              <span className="text-xl font-bold font-cairo">{settings.company_name}</span>
             </Link>
-            <p className="text-primary-foreground/70 mb-4 leading-relaxed">
-              {dir === 'rtl'
-                ? 'منصتك الموثوقة للعثور على عقارك المثالي في أي مكان في العالم.'
-                : 'Your trusted platform for finding your perfect property anywhere in the world.'}
-            </p>
+            <p className="text-primary-foreground/70 mb-4 leading-relaxed">{descText}</p>
             <div className="flex gap-3">
-              <a
-                href="#"
-                className="w-10 h-10 bg-primary-foreground/10 rounded-lg flex items-center justify-center hover:bg-gold hover:text-navy-dark transition-colors"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="w-10 h-10 bg-primary-foreground/10 rounded-lg flex items-center justify-center hover:bg-gold hover:text-navy-dark transition-colors"
-              >
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="w-10 h-10 bg-primary-foreground/10 rounded-lg flex items-center justify-center hover:bg-gold hover:text-navy-dark transition-colors"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="w-10 h-10 bg-primary-foreground/10 rounded-lg flex items-center justify-center hover:bg-gold hover:text-navy-dark transition-colors"
-              >
-                <Linkedin className="w-5 h-5" />
-              </a>
+              {socialLinks.map(({ url, icon: Icon }, i) => (
+                <a
+                  key={i}
+                  href={url || '#'}
+                  target={url ? '_blank' : undefined}
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-primary-foreground/10 rounded-lg flex items-center justify-center hover:bg-gold hover:text-navy-dark transition-colors"
+                >
+                  <Icon className="w-5 h-5" />
+                </a>
+              ))}
             </div>
           </div>
 
@@ -57,38 +57,18 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
               {dir === 'rtl' ? 'روابط سريعة' : 'Quick Links'}
             </h4>
             <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/"
-                  className="text-primary-foreground/70 hover:text-gold transition-colors"
-                >
-                  {t('home')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/properties"
-                  className="text-primary-foreground/70 hover:text-gold transition-colors"
-                >
-                  {t('properties')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/about"
-                  className="text-primary-foreground/70 hover:text-gold transition-colors"
-                >
-                  {t('about')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/contact"
-                  className="text-primary-foreground/70 hover:text-gold transition-colors"
-                >
-                  {t('contact')}
-                </Link>
-              </li>
+              {[
+                { to: '/', label: t('home') },
+                { to: '/properties', label: t('properties') },
+                { to: '/about', label: t('about') },
+                { to: '/contact', label: t('contact') },
+              ].map((link) => (
+                <li key={link.to}>
+                  <Link to={link.to} className="text-primary-foreground/70 hover:text-gold transition-colors">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -98,38 +78,18 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
               {dir === 'rtl' ? 'أنواع العقارات' : 'Property Types'}
             </h4>
             <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/properties?type=sale"
-                  className="text-primary-foreground/70 hover:text-gold transition-colors"
-                >
-                  {t('forSale')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/properties?type=daily"
-                  className="text-primary-foreground/70 hover:text-gold transition-colors"
-                >
-                  {t('dailyRent')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/properties?type=monthly"
-                  className="text-primary-foreground/70 hover:text-gold transition-colors"
-                >
-                  {t('monthlyRent')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/properties?type=permanent"
-                  className="text-primary-foreground/70 hover:text-gold transition-colors"
-                >
-                  {t('permanentRent')}
-                </Link>
-              </li>
+              {[
+                { to: '/properties?type=sale', label: t('forSale') },
+                { to: '/properties?type=daily', label: t('dailyRent') },
+                { to: '/properties?type=monthly', label: t('monthlyRent') },
+                { to: '/properties?type=permanent', label: t('permanentRent') },
+              ].map((link) => (
+                <li key={link.to}>
+                  <Link to={link.to} className="text-primary-foreground/70 hover:text-gold transition-colors">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -141,23 +101,15 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-gold mt-0.5 shrink-0" />
-                <span className="text-primary-foreground/70">
-                  {dir === 'rtl'
-                    ? 'الدار البيضاء، المغرب'
-                    : 'Casablanca, Morocco'}
-                </span>
+                <span className="text-primary-foreground/70">{cityText}</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-gold shrink-0" />
-                <span className="text-primary-foreground/70" dir="ltr">
-                  +212 600 000 000
-                </span>
+                <span className="text-primary-foreground/70" dir="ltr">{settings.company_phone}</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-gold shrink-0" />
-                <span className="text-primary-foreground/70">
-                  contact@smsar.com
-                </span>
+                <span className="text-primary-foreground/70">{settings.company_email}</span>
               </li>
             </ul>
           </div>
@@ -166,19 +118,13 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-primary-foreground/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-primary-foreground/60 text-sm">
-            © 2024 SMSAR. {t('allRightsReserved')}
+            © {new Date().getFullYear()} {settings.company_name}. {t('allRightsReserved')}
           </p>
           <div className="flex gap-6 text-sm">
-            <Link
-              to="/privacy"
-              className="text-primary-foreground/60 hover:text-gold transition-colors"
-            >
+            <Link to="/privacy" className="text-primary-foreground/60 hover:text-gold transition-colors">
               {t('privacyPolicy')}
             </Link>
-            <Link
-              to="/terms"
-              className="text-primary-foreground/60 hover:text-gold transition-colors"
-            >
+            <Link to="/terms" className="text-primary-foreground/60 hover:text-gold transition-colors">
               {t('termsOfService')}
             </Link>
           </div>
