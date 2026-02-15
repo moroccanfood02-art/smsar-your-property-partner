@@ -4,7 +4,7 @@ import {
   MapPin, Bed, Bath, Maximize, ArrowLeft, ArrowRight, 
   Phone, MessageSquare, Share2, Heart, Calendar, Eye, Home, 
   Building2, Loader2, ChevronLeft, ChevronRight,
-  Check, X
+  Check, X, Expand
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +20,7 @@ import PropertyMap from '@/components/property/PropertyMap';
 import SendMessageDialog from '@/components/property/SendMessageDialog';
 import { useFavorites } from '@/hooks/useFavorites';
 import { toast } from 'sonner';
+import ImageLightbox from '@/components/property/ImageLightbox';
 
 interface Property {
   id: string;
@@ -61,6 +62,7 @@ const PropertyDetailsPage: React.FC = () => {
   const [owner, setOwner] = useState<OwnerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const { isFavorite, toggleFavorite } = useFavorites({ language });
 
   const translations = {
@@ -435,96 +437,107 @@ const PropertyDetailsPage: React.FC = () => {
         {/* Image Gallery */}
         <section className="bg-muted">
           <div className="container mx-auto px-4 py-6">
-            <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-xl overflow-hidden">
-              {property.images && property.images.length > 0 ? (
-                <>
+            {property.images && property.images.length > 1 ? (
+              /* Multi-image grid layout */
+              <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-xl overflow-hidden" style={{ height: '460px' }}>
+                {/* Main large image */}
+                <div
+                  className="col-span-2 row-span-2 relative cursor-pointer group"
+                  onClick={() => { setCurrentImageIndex(0); setLightboxOpen(true); }}
+                >
                   <img
-                    src={property.images[currentImageIndex]}
+                    src={property.images[0]}
                     alt={property.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
-                  
-                  {property.images.length > 1 && (
-                    <>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="absolute start-4 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background"
-                        onClick={prevImage}
-                      >
-                        {dir === 'rtl' ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="absolute end-4 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background"
-                        onClick={nextImage}
-                      >
-                        {dir === 'rtl' ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                      </Button>
-                      
-                      {/* Image Counter */}
-                      <div className="absolute bottom-4 start-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
-                        {currentImageIndex + 1} / {property.images.length}
-                      </div>
-                    </>
-                  )}
-                </>
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-                  <Home className="w-24 h-24 text-muted-foreground/30" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                 </div>
-              )}
-              
-              {/* Badges */}
-              <div className="absolute top-4 start-4 flex flex-wrap gap-2">
-                <Badge className="bg-amber-500 text-slate-900 hover:bg-amber-600 text-sm px-3 py-1">
-                  {getListingTypeLabel(property.listing_type)}
-                </Badge>
-                <Badge className={`${getStatusColor(property.status)} text-white text-sm px-3 py-1`}>
-                  {getStatusLabel(property.status)}
-                </Badge>
-              </div>
-
-              {/* Actions */}
-              <div className="absolute top-4 end-4 flex gap-2">
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="bg-background/80 backdrop-blur-sm hover:bg-background"
-                  onClick={handleShare}
-                >
-                  <Share2 className="w-5 h-5" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className={`bg-background/80 backdrop-blur-sm hover:bg-background ${property && isFavorite(property.id) ? 'text-red-500' : ''}`}
-                  onClick={handleFavorite}
-                >
-                  <Heart className={`w-5 h-5 ${property && isFavorite(property.id) ? 'fill-current' : ''}`} />
-                </Button>
-              </div>
-            </div>
-
-            {/* Thumbnails */}
-            {property.images && property.images.length > 1 && (
-              <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                {property.images.map((image, index) => (
-                  <button
+                {/* Secondary images */}
+                {property.images.slice(1, 5).map((image, index) => (
+                  <div
                     key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                      currentImageIndex === index 
-                        ? 'border-amber-500 ring-2 ring-amber-500/30' 
-                        : 'border-transparent hover:border-border'
-                    }`}
+                    className="relative cursor-pointer group overflow-hidden"
+                    onClick={() => { setCurrentImageIndex(index + 1); setLightboxOpen(true); }}
                   >
-                    <img src={image} alt="" className="w-full h-full object-cover" />
-                  </button>
+                    <img
+                      src={image}
+                      alt=""
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                    {/* Show remaining count on last visible image */}
+                    {index === 3 && property.images.length > 5 && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <span className="text-white text-2xl font-bold">+{property.images.length - 5}</span>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
+            ) : (
+              /* Single image or no image */
+              <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-xl overflow-hidden">
+                {property.images && property.images.length > 0 ? (
+                  <div
+                    className="w-full h-full cursor-pointer group"
+                    onClick={() => setLightboxOpen(true)}
+                  >
+                    <img
+                      src={property.images[0]}
+                      alt={property.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                    <Home className="w-24 h-24 text-muted-foreground/30" />
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* Badges & Actions overlay */}
+            <div className="relative -mt-16 px-4 pb-4 pointer-events-none">
+              <div className="flex items-end justify-between">
+                <div className="flex flex-wrap gap-2 pointer-events-auto">
+                  <Badge className="bg-amber-500 text-slate-900 hover:bg-amber-600 text-sm px-3 py-1 shadow-md">
+                    {getListingTypeLabel(property.listing_type)}
+                  </Badge>
+                  <Badge className={`${getStatusColor(property.status)} text-white text-sm px-3 py-1 shadow-md`}>
+                    {getStatusLabel(property.status)}
+                  </Badge>
+                </div>
+                <div className="flex gap-2 pointer-events-auto">
+                  {property.images && property.images.length > 0 && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="bg-background/80 backdrop-blur-sm hover:bg-background shadow-md"
+                      onClick={() => setLightboxOpen(true)}
+                    >
+                      <Expand className="w-4 h-4 me-2" />
+                      {property.images.length} {language === 'ar' ? 'صور' : 'photos'}
+                    </Button>
+                  )}
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="bg-background/80 backdrop-blur-sm hover:bg-background shadow-md"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className={`bg-background/80 backdrop-blur-sm hover:bg-background shadow-md ${property && isFavorite(property.id) ? 'text-red-500' : ''}`}
+                    onClick={handleFavorite}
+                  >
+                    <Heart className={`w-5 h-5 ${property && isFavorite(property.id) ? 'fill-current' : ''}`} />
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -741,6 +754,18 @@ const PropertyDetailsPage: React.FC = () => {
       </main>
 
       <Footer />
+
+      {/* Lightbox */}
+      {property.images && property.images.length > 0 && (
+        <ImageLightbox
+          images={property.images}
+          currentIndex={currentImageIndex}
+          isOpen={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+          onNavigate={setCurrentImageIndex}
+          dir={dir}
+        />
+      )}
     </div>
   );
 };
